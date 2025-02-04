@@ -125,7 +125,9 @@ def create_morph_df(source_morphs, name=None, save=False):
         sources.append({
             'xc_centroid': src.xc_centroid,
             'yc_centroid': src.yc_centroid,
+            'ellipticity_asymmetry': src.ellipticity_asymmetry,
             'ellipticity_centroid': src.ellipticity_centroid,
+            'elongation_asymmetry': src.elongation_asymmetry,
             'elongation_centroid': src.elongation_centroid,
             'orientation_centroid': src.orientation_centroid,
             'xc_asymmetry': src.xc_asymmetry,
@@ -156,14 +158,35 @@ def create_morph_df(source_morphs, name=None, save=False):
             'sersic_ellip': src.sersic_ellip,
             'sersic_theta': src.sersic_theta,
             'sersic_chi2_dof': src.sersic_chi2_dof,
+            # something is up with these double sersic fits that makes this run forever
+            # 'doublesersic_aic': src.doublesersic_aic,
+            # 'doublesersic_amplitude1': src.doublesersic_amplitude1,
+            # 'doublesersic_amplitude2': src.doublesersic_amplitude2,
+            # 'doublesersic_bic': src.doublesersic_bic,
+            # 'doublesersic_chi2_dof': src.doublesersic_chi2_dof,
+            # 'doublesersic_ellip1': src.doublesersic_ellip1,
+            # 'doublesersic_ellip2': src.doublesersic_ellip2,
+            # 'doublesersic_n1': src.doublesersic_n1,
+            # 'doublesersic_n2': src.doublesersic_n2,
+            # 'doublesersic_rhalf1': src.doublesersic_rhalf1,
+            # 'doublesersic_rhalf2': src.doublesersic_rhalf2,
+            # 'doublesersic_theta1': src.doublesersic_theta1,
+            # 'doublesersic_theta2': src.doublesersic_theta2,
+            # 'doublesersic_xc': src.doublesersic_xc,
+            # 'doublesersic_yc': src.doublesersic_yc,
             'sky_mean': src.sky_mean,
             'sky_median': src.sky_median,
             'sky_sigma': src.sky_sigma,
             'flag': src.flag,
             'flag_sersic': src.flag_sersic,
+            'flux_circ': src.flux_circ,
+            'flux_ellip': src.flux_ellip,
+            'runtime': src.runtime
         })
     sources = pd.DataFrame(sources)
     if save:
-        sources.to_csv('a383_source_morphs.csv')
-        # sources.to_csv(name)
+        if name is not None:
+            sources.to_csv(name)
+        else:
+            sources.to_csv('source_morphs.csv')
     return sources
