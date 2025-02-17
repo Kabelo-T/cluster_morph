@@ -5,7 +5,8 @@ from matplotlib.patches import Circle
 import seaborn as sns
 
 
-def display_img(image: np.array, segmap: np.array = None, mask: np.array = None):
+def display_img(image: np.array, axs, segmap: np.array = None,
+                mask: np.array = None, **kwargs):
     """Display an image, masked or unmasked. May plot alongside segmentation map
 
     Parameters
@@ -20,16 +21,11 @@ def display_img(image: np.array, segmap: np.array = None, mask: np.array = None)
     if mask is not None:
         image = np.where(mask, image, 0)
 
-    if segmap is not None:
-        fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(10, 10))
+    if isinstance(axs, np.ndarray):
         axs[0].imshow(image, vmin=0, vmax=0.05)
         axs[1].imshow(segmap, cmap='gray')
     else:
-        fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(6, 6))
         axs.imshow(image, vmin=0, vmax=0.05)
-
-    plt.show()
-
     return
 
 
