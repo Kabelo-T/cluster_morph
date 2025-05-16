@@ -66,7 +66,7 @@ def circular_mask(image, image_center, radius):
                        radius=radius,
                        shape=(image.shape[0], image.shape[1]))
     segmap[rr, cc] = 1
-    return segmap == 1
+    return segmap.astype(np.uint8)
 
 
 def print_src_morphs(source_morphs, index=0):

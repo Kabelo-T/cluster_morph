@@ -2,11 +2,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
+from matplotlib.colors import LogNorm
 import seaborn as sns
 
 
 def display_img(image: np.array, axs, segmap: np.array = None,
-                mask: np.array = None, **kwargs):
+                mask: np.array = None, vmin=None, vmax=None, **kwargs):
     """Display an image, masked or unmasked. May plot alongside segmentation map
 
     Parameters
@@ -21,11 +22,16 @@ def display_img(image: np.array, axs, segmap: np.array = None,
     if mask is not None:
         image = np.where(mask, image, 0)
 
-    if isinstance(axs, np.ndarray):
-        axs[0].imshow(image, vmin=0, vmax=0.05)
-        axs[1].imshow(segmap, cmap='gray')
+    if vmin is not None and vmax is not None:
+        norm = LogNorm(vmin=vmin, vmax=vmax)
     else:
-        axs.imshow(image, vmin=0, vmax=0.05)
+        norm = LogNorm()
+
+    if isinstance(axs, np.ndarray):
+        axs[0].imshow(image, norm=norm)
+        axs[1].imshow(segmap, norm=norm, cmap='gray')
+    else:
+        axs.imshow(image, norm=norm)
     return
 
 
@@ -71,15 +77,18 @@ def plot_corr_matrix(corr_matrix: pd.DataFrame):
     return
 
 
-def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame):
-    """Plot joint distributions of the highly correlated and anti-correlated parameters
+def high_corr_cols(corr_matrix: pd.DataFrame, tolerance) -> list[bool]:
+    """Select columns that are highly correlated and anti-correlated
 
     Parameters
     ----------
     corr_matrix : pd.DataFrame
         correlations of all the parameters
-    morph_df : pd.DataFrame
-        statmorph morphological measurements
+
+    Returns
+    -------
+    list[bool]
+        _description_
     """
     selection = []
     good_cols = []
@@ -91,7 +100,27 @@ def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame):
                 continue
             else:
                 selection.append((x, c))
+    return selection
 
+
+def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame, 
+              low: int = 30, high = 40) -> None :
+    """Plot joint distributions of the highly correlated and anti-correlated 
+    parameters
+
+    Parameters
+    ----------
+    corr_matrix : pd.DataFrame
+        correlations of all the parameters
+    morph_df : pd.DataFrame
+        statmorph morphological measurements
+    low : int
+        lower bound index
+    high : int
+        upper bound index
+    """
+
+    selection = high_corr_cols(corr_matrix=corr_matrix)
     for i, row in enumerate(selection):
         if i in range(30, 40):
             rho = corr_matrix[row[0]][row[1]]
