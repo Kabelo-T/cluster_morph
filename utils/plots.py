@@ -77,7 +77,7 @@ def plot_corr_matrix(corr_matrix: pd.DataFrame):
     return
 
 
-def high_corr_cols(corr_matrix: pd.DataFrame, tolerance) -> list[bool]:
+def high_corr_cols(corr_matrix: pd.DataFrame, tolerance=0.7) -> list[bool]:
     """Select columns that are highly correlated and anti-correlated
 
     Parameters
@@ -103,8 +103,8 @@ def high_corr_cols(corr_matrix: pd.DataFrame, tolerance) -> list[bool]:
     return selection
 
 
-def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame, 
-              low: int = 30, high = 40) -> None :
+def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
+              low: int = 30, high=40) -> None:
     """Plot joint distributions of the highly correlated and anti-correlated 
     parameters
 
