@@ -69,6 +69,34 @@ def circular_mask(image, image_center, radius):
     return segmap.astype(np.uint8)
 
 
+def annular_mask(image, image_center, r1, r2):
+    """Creates an annular mask for statmorph measurement
+
+    Parameters
+    ----------
+    image : _type_
+        _description_
+    image_center : tuple(float, float)
+        center coords
+    r1 : float
+        Inner radius (physical units)
+    r2 : float
+        Outer radius (physical units)
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
+
+    segmap = circular_mask(image, image_center, radius=r2)
+    rr, cc = draw.disk((image_center[1], image_center[0]),
+                       radius=r1,
+                       shape=(image.shape[0], image.shape[1]))
+    segmap[rr, cc] = 0
+    return segmap.astype(np.uint8)
+
+
 def print_src_morphs(source_morphs, index=0):
 
     print('BASIC MEASUREMENTS (NON-PARAMETRIC)')
