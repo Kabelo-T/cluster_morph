@@ -218,3 +218,15 @@ def create_morph_df(source_morphs, name=None, save=False):
         else:
             sources.to_csv('source_morphs.csv')
     return sources
+
+
+def load_mah(file: str) -> pd.DataFrame:
+    if '.dat' not in file:
+        return
+    mah_df = pd.read_csv(file, sep=r'\s+', index_col=False)
+    mm0 = mah_df['Mvir(4)'].values/mah_df['Mvir(4)'][0]
+    mm0 = pd.DataFrame(mm0)
+    mm0.rename(columns={0: 'M/M0'}, inplace=True)
+    mm0['Redshift'] = mah_df['Redshift(0)']
+    mm0['aexp'] = 1 / (1+mm0['Redshift'])
+    return mm0
