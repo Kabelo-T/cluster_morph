@@ -1,100 +1,5 @@
 import numpy as np
 import pandas as pd
-from photutils.segmentation import detect_threshold, detect_sources
-from skimage import draw
-
-
-def segmentation_map(image, nsigma=5.5, npixels=10000, mask=None):
-    """
-    Create the segmentation map for use in statmorph.
-
-    Parameters
-    ----------
-    image: input image data
-    nsigma: The number of standard deviations per pixel above the ``background``
-            for which to consider a pixel as possibly being
-            part of a source.
-    npixels: The minimum number of connected pixels an object must have to be detected.
-    mask: A boolean mask where `True` values indicate masked pixels
-
-    Returns
-    -------
-
-    segmap: 2D segmentation map for statmorph
-    """
-    threshold = detect_threshold(image, nsigma)
-    if mask is None:
-        segmap = detect_sources(image, threshold, npixels=npixels)
-    else:
-        segmap = detect_sources(image, threshold, npixels=npixels, mask=mask)
-    return segmap
-
-
-def crop(image, radius=1000):
-    """
-    Square image crop.
-    """
-    w = image.shape[1]
-    h = image.shape[0]
-    origin = (int(w/2), int(h/2))
-    x_min = max(origin[0] - radius, 0)
-    x_max = min(origin[0] + radius, w)
-    y_min = max(origin[1] - radius, 0)
-    y_max = min(origin[1] + radius, h)
-    cropped_img = image[y_min:y_max, x_min:x_max]
-    return cropped_img
-
-
-def zoom_in(object, image):
-    """
-    Square image crop using statmorph source object properties.
-    """
-    zoom_size = 4 * object.rhalf_circ
-    x_min = int(object.xc_centroid - zoom_size)
-    x_max = int(object.xc_centroid + zoom_size)
-    y_min = int(object.yc_centroid - zoom_size)
-    y_max = int(object.yc_centroid + zoom_size)
-
-    # Extract the zoomed region
-    zoomed_region = image[y_min:y_max, x_min:x_max]
-    return zoomed_region, zoom_size
-
-
-def circular_mask(image, image_center, radius):
-    segmap = np.zeros(image.shape)
-    rr, cc = draw.disk((image_center[1], image_center[0]),
-                       radius=radius,
-                       shape=(image.shape[0], image.shape[1]))
-    segmap[rr, cc] = 1
-    return segmap.astype(np.uint8)
-
-
-def annular_mask(image, image_center, r1, r2):
-    """Creates an annular mask for statmorph measurement
-
-    Parameters
-    ----------
-    image : _type_
-        _description_
-    image_center : tuple(float, float)
-        center coords
-    r1 : float
-        Inner radius (physical units)
-    r2 : float
-        Outer radius (physical units)
-
-    Returns
-    -------
-    _type_
-        _description_
-    """
-
-    segmap = circular_mask(image, image_center, radius=r2)
-    rr, cc = draw.disk((image_center[1], image_center[0]),
-                       radius=r1,
-                       shape=(image.shape[0], image.shape[1]))
-    segmap[rr, cc] = 0
-    return segmap.astype(np.uint8)
 
 
 def print_src_morphs(source_morphs, index=0):
@@ -221,6 +126,17 @@ def create_morph_df(source_morphs, name=None, save=False):
 
 
 def load_mah(file: str) -> pd.DataFrame:
+    """Load the mass accretion histories for a cluster.
+
+    Parameters
+    ----------
+    file : str
+
+    Returns
+    -------
+    mm0 : pd.DataFrame
+        mass accretion history as M(z)/M(z=0)
+    """
     if '.dat' not in file:
         return
     mah_df = pd.read_csv(file, sep=r'\s+', index_col=False)
@@ -230,3 +146,56 @@ def load_mah(file: str) -> pd.DataFrame:
     mm0['Redshift'] = mah_df['Redshift(0)']
     mm0['aexp'] = 1 / (1+mm0['Redshift'])
     return mm0
+
+
+def bootstrap(mah_ds_df: pd.DataFrame,
+              sample_size: int = None) -> list[pd.DataFrame]:
+    """Bootstrap the spearman correlation coefficients for the mass accretion 
+    histories and the dynamical state parameters (aexp = 1)
+
+    Parameters
+    ----------
+    mah_ds_df : pd.DataFrame
+        Dataframe of mass accretion histories and dynamical state params
+    sample_size : int, optional
+
+    Returns
+    -------
+    list[pd.DataFrame]
+        list of correlations from each samples
+    """
+    if not sample_size:
+        sample_size = len(mah_ds_df)
+
+    corrs_list = []
+    for _ in range(100):
+        df = mah_ds_df.sample(n=sample_size, replace=True)
+        corrs = df.corr(method='spearman')
+        corrs_list.append(corrs['M/M0'])
+    return corrs_list
+
+
+def get_perc(mah_ds_dict: dict, param: str, q: int) -> list[float]:
+    """Get the qth percentile at each aexp, for the pearson correlations between
+    mass accretion histories and dynamical state parameters
+
+    Parameters
+    ----------
+    mah_ds_dict : dict
+    param : str
+        dynamical state parameter to be selected
+    q : int
+        the percentile
+
+    Returns
+    -------
+    percs : list[float]
+        qth percentile at each aexp value
+    """
+
+    percs = []
+    for k in mah_ds_dict.keys():
+        corrs_list = bootstrap(mah_ds_dict[k])
+        param_list = sorted([series[param] for series in corrs_list])
+        percs.append(np.percentile(param_list, q=q))
+    return percs
