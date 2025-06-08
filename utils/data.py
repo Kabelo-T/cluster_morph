@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-
+import astropy.units as u
 
 def print_src_morphs(source_morphs, index=0):
 
@@ -199,3 +199,10 @@ def get_perc(mah_ds_dict: dict, param: str, q: int) -> list[float]:
         param_list = sorted([series[param] for series in corrs_list])
         percs.append(np.percentile(param_list, q=q))
     return percs
+
+
+def real2pix(r, map=None, scale=5*u.Mpc):
+    scale = scale.to(u.kpc)
+    pixperkpc = 2048/scale.value
+    radius = r.value*pixperkpc
+    return int(radius)
