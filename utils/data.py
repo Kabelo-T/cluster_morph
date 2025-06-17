@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import astropy.units as u
+from astropy.io import fits
 
 
 def print_src_morphs(source_morphs, index=0):
@@ -52,10 +53,10 @@ def print_src_morphs(source_morphs, index=0):
     return
 
 
-def create_morph_df(source_morphs, name=None, save=False, id_list=None):
+def create_morph_df(source_morphs, name=None, save=False):
 
     sources = []
-    for src, id in source_morphs:
+    for id, src in source_morphs:
         sources.append({
             'ID': id,
             'xc_centroid': src.xc_centroid,
@@ -186,14 +187,55 @@ def get_perc(mah_ds_dict: dict, param: str, q: int) -> list[float]:
     return percs
 
 
-def real2pix(r, map=None, scale=5*u.Mpc):
+def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
+    """Convert from physical units to pixels
+
+    Parameters
+    ----------
+    r : u.Quantity
+        radius in Mpc
+    map : np.ndarray
+    scale : _type_, optional
+        size of the map, by default 5*u.Mpc
+
+    Returns
+    -------
+    radius : int
+        the length in pixels
+    """
     pixperMpc = map.shape[0]/scale.value
     radius = r.value*pixperMpc
     return int(radius)
 
 
-def find_id(file):
+def find_id(file: str) -> int:
+    """Find halo ID for mass accretion histories
+
+    Parameters
+    ----------
+    file : str
+        file name
+
+    Returns
+    -------
+    id  
+    """
+
     ind = file.find('_0')
     sub = file[ind+1:ind+5]
-    id = int(sub.strip('0'))
+    id = int(sub.lstrip('0'))
     return id
+
+
+def load_map(file, map_dir):
+    if '.fits' in file:
+        map_file = map_dir + file
+
+    try:
+        map = fits.open(map_file)
+    except FileNotFoundError:
+        return None
+
+    map = fits.open(map_file)
+    map = map[0].data
+    return map
