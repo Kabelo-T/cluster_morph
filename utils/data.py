@@ -1,7 +1,12 @@
+import os
+
 import numpy as np
 import pandas as pd
 import astropy.units as u
 from astropy.io import fits
+from scipy.interpolate import interp1d
+
+import utils.corrs as corutils
 
 
 def print_src_morphs(source_morphs, index=0):
@@ -134,6 +139,17 @@ def get_mah(file: str) -> pd.DataFrame:
     return mm0
 
 
+def get_mah_all(mah_dir: str = 'data/gadgetx3k_20/AHFHaloHistory') -> dict:
+    mah_df_dict = {}
+    mah_dir = 'data/gadgetx3k_20/AHFHaloHistory/'
+    for f in sorted(os.listdir(mah_dir)):
+        file = mah_dir + f
+        mm0 = get_mah(file)
+        id = find_id(file)
+        mah_df_dict[id] = mm0
+    return mah_df_dict
+
+
 def bootstrap(mah_ds_df: pd.DataFrame,
               sample_size: int = None) -> list[pd.DataFrame]:
     """Bootstrap the spearman correlation coefficients for the mass accretion 
@@ -161,13 +177,13 @@ def bootstrap(mah_ds_df: pd.DataFrame,
     return corrs_list
 
 
-def get_perc(mah_ds_dict: dict, param: str, q: int) -> list[float]:
+def get_perc(df_dict: dict, param: str, q: int) -> list[float]:
     """Get the qth percentile at each aexp, for the pearson correlations between
     mass accretion histories and dynamical state parameters
 
     Parameters
     ----------
-    mah_ds_dict : dict
+    df_dict : dict
     param : str
         dynamical state parameter to be selected
     q : int
@@ -180,8 +196,8 @@ def get_perc(mah_ds_dict: dict, param: str, q: int) -> list[float]:
     """
 
     percs = []
-    for k in mah_ds_dict.keys():
-        corrs_list = bootstrap(mah_ds_dict[k])
+    for k in df_dict.keys():
+        corrs_list = bootstrap(df_dict[k])
         param_list = sorted([series[param] for series in corrs_list])
         percs.append(np.percentile(param_list, q=q))
     return percs
@@ -239,3 +255,68 @@ def load_map(file, map_dir):
     map = fits.open(map_file)
     map = map[0].data
     return map
+
+
+def get_morphologies(sm_dir: str) -> pd.DataFrame:
+    sm_df = pd.read_csv(sm_dir)
+    sm_df.set_index('ID', inplace=True)
+    sm_df.drop(columns=['flag', 'flag_sersic', 'flux_circ', 'flux_ellip',
+                        'sn_per_pixel', 'runtime (s)'], inplace=True)
+    return sm_df
+
+
+def define_ma(df_dict: dict[pd.DataFrame]):
+    redshifts = corutils.unique_redshifts(df_dict)
+    aexp = 1/(1+np.array(redshifts))
+    min_a = np.min(aexp)
+    max_a = np.max(aexp)
+    common_aexp = np.linspace(min_a+0.1, max_a-0.1, 80)
+
+    mah = np.full(shape=(len(df_dict), len(common_aexp)),
+                  fill_value=np.nan)
+
+    for i, df in enumerate(df_dict.values()):
+        a = df['aexp'].values
+        m = df['M/M0'].values
+
+        sort_idx = np.argsort(a)
+        a_sorted = a[sort_idx]
+        m_sorted = m[sort_idx]
+
+        # Only interpolate over increasing a
+        interp_func = interp1d(
+            a_sorted, m_sorted,
+            bounds_error=False,
+            fill_value=np.nan
+        )
+
+        mah[i] = interp_func(common_aexp)
+    return mah, common_aexp
+
+
+def get_ds_theory_today(file_path: str = 'data/gadgetx3k_20/GadgetX-DS-theory-snap-128.txt'):
+    ds_z0 = {}
+    with open(file_path) as f:
+        for i, x in enumerate(f):
+            if i == 0:
+                continue
+            k, v = list(map(int, x.split()))
+            ds_z0[k] = v
+    return ds_z0
+
+
+def get_ds(file: str = 'data/gadgetx3k_20/G3X_progenitors/DS_G3X_snap_128_center-cluster_progenitors.txt') -> pd.DataFrame:
+    dsdf = pd.read_csv(file, sep=r'\s+', header=0)
+    int_columns = [0, 1, 2, 7]
+    column_names = dsdf.columns
+    for idx in range(len(column_names)):
+        col_name = column_names[idx]
+        if idx in int_columns:
+            dsdf[col_name] = dsdf[col_name].astype(int)
+        else:
+            dsdf[col_name] = dsdf[col_name].astype(float)
+
+    dsdf.drop(columns=['Hid[1]', 'DS_200[2]', 'DS_500[7]'], inplace=True)
+    dsdf.rename(columns={'rID[0]': 'ID'}, inplace=True)
+    dsdf.set_index('ID', inplace=True)
+    return dsdf

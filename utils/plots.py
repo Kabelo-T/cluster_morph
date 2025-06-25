@@ -5,6 +5,8 @@ from matplotlib.patches import Circle
 from matplotlib.colors import LogNorm
 import seaborn as sns
 
+import utils.data as datutils
+
 
 def display_img(image: np.array, axs, segmap: np.array = None,
                 mask: np.array = None, vmin=None, vmax=None, **kwargs):
@@ -68,7 +70,7 @@ def plot_corr_matrix(corr_matrix: pd.DataFrame):
     corr_matrix : pd.DataFrame
         correlations of all the parameters
     """
-    mask = np.triu(np.ones_like(corr_matrix, dtype=np.bool))
+    mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
     plt.figure(figsize=(25, 25))
     fhm = sns.heatmap(corr_matrix, mask=mask,
                       cmap='coolwarm', square=True)
@@ -130,3 +132,20 @@ def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
             plt.tight_layout()
             plt.subplots_adjust(top=0.9)
             plt.show()
+
+
+def plot_mah(indx: int, axs: plt.Axes, 
+             mah_dir: str = 'data/gadgetx3k_20/AHFHaloHistory'):
+    state = {0: "Relaxed",
+             1: "Disturbed"}
+
+    ds_z0 = datutils.get_ds_theory_today(
+        'data/gadgetx3k_20/GadgetX-DS-theory-snap-128.txt')
+
+    axs.set_title(f'ID {indx} | {state[ds_z0[indx]]}')
+    mah_file = f'{mah_dir}/NewMDCLUSTER_{str(indx).zfill(4)}_halo_128000000000001.dat'
+    mm0 = datutils.get_mah(mah_file)
+    axs.plot(mm0['aexp'], mm0['M/M0'], label='total')
+    axs.set_xlabel('aexp')
+    axs.set_ylabel('M/M0')
+    return
