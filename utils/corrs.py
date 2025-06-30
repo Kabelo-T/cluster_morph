@@ -5,33 +5,15 @@ import numpy as np
 import utils.data as datutils
 
 
-def unique_redshifts(mah_df_dict: dict[pd.DataFrame]) -> list:
-    zs = [x['Redshift'].to_list() for x in mah_df_dict.values()]
-    redshifts = []
-    for z in zs:
-        redshifts.extend(z)
-
-    redshifts = sorted(list(set(redshifts)))
-
-    return redshifts
-
-
 def build_ma_corrs(mah_df_dict: dict[pd.DataFrame],
                    df0: pd.DataFrame) -> list:
     corrs_list = []
     filtered_z = []
     params_dict = {}
-    redshifts = unique_redshifts(mah_df_dict)
+    redshifts = datutils.unique_redshifts(mah_df_dict)
     for z in redshifts:
-        mah_df = pd.DataFrame(columns=['ID', 'M/M0'])
-        for region in mah_df_dict.keys():
-            row = mah_df_dict[region].loc[mah_df_dict[region]
-                                          ['Redshift'] == z, ['M/M0']]
-            row['ID'] = region
-            if not row.empty:
-                mah_df = pd.concat([mah_df, row], ignore_index=True)
-
-        if len(mah_df) < 200:
+        mah_df = datutils.ma(z, mah_df_dict)
+        if len(mah_df) < 120:
             continue
 
         mah_df.set_index('ID', inplace=True)
