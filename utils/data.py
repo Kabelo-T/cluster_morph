@@ -9,30 +9,30 @@ from scipy.interpolate import interp1d
 import utils.corrs as corutils
 
 
-def bootstrap(mah_ds_df: pd.DataFrame,
-              sample_size: int = None) -> list[pd.DataFrame]:
+def bootstrap(combined_df: pd.DataFrame,
+              sample_size: int = None) -> list[pd.Series]:
     """Bootstrap the spearman correlation coefficients for the mass accretion 
     histories and the dynamical state parameters (aexp = 1)
 
     Parameters
     ----------
-    mah_ds_df : pd.DataFrame
-        Dataframe of mass accretion histories and dynamical state params
+    combined_df : pd.DataFrame
+        Dataframe of mass accretion history and morphology/dynamical state
     sample_size : int, optional
 
     Returns
     -------
-    list[pd.DataFrame]
+    list[pd.Series]
         list of correlations from each samples
     """
-    if not sample_size:
-        sample_size = len(mah_ds_df)
+    if sample_size is None:
+        sample_size = len(combined_df)
 
-    corrs_list = []
-    for _ in range(100):
-        df = mah_ds_df.sample(n=sample_size, replace=True)
-        corrs = df.corr(method='spearman')
-        corrs_list.append(corrs['M/M0'])
+    corrs_list = [
+        combined_df.sample(n=sample_size, replace=True).corr(
+            method='spearman')['M/M0']
+        for _ in range(100)
+    ]
     return corrs_list
 
 
@@ -80,11 +80,11 @@ def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
     """
     pixperMpc = map.shape[0]/scale.value
     r = r.to(u.Mpc)
-    radius = r.value*pixperMpc
-    return int(radius)
+    radius = int(r.value*pixperMpc)
+    return radius
 
 
-def define_ma(df_dict: dict[pd.DataFrame]):
+def define_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]:
     redshifts = unique_redshifts(df_dict)
     aexp = 1/(1+np.array(redshifts))
     min_a = np.min(aexp)
@@ -99,12 +99,10 @@ def define_ma(df_dict: dict[pd.DataFrame]):
         m = df['M/M0'].values
 
         sort_idx = np.argsort(a)
-        a_sorted = a[sort_idx]
-        m_sorted = m[sort_idx]
+        a, m = a[sort_idx], m[sort_idx]
 
-        # Only interpolate over increasing a
         interp_func = interp1d(
-            a_sorted, m_sorted,
+            a, m,
             bounds_error=False,
             fill_value=np.nan
         )

@@ -1,7 +1,7 @@
 import os
 
 import pandas as pd
-import astropy.io as fits
+from astropy.io import fits
 
 
 def print_src_morphs(source_morphs, index=0):
@@ -63,21 +63,21 @@ def find_id(file: str) -> int:
 
     Returns
     -------
-    id  
+    idx  
     """
 
     ind = file.find('_0')
     sub = file[ind+1:ind+5]
-    id = int(sub.lstrip('0'))
-    return id
+    idx = int(sub.lstrip('0'))
+    return idx
 
 
 def create_morph_df(source_morphs, name=None, save=False):
 
     sources = []
-    for id, src in source_morphs:
+    for idx, src in source_morphs:
         sources.append({
-            'ID': id,
+            'ID': idx,
             'xc_centroid': src.xc_centroid,
             'yc_centroid': src.yc_centroid,
             'ellipticity_asymmetry': src.ellipticity_asymmetry,
@@ -122,6 +122,7 @@ def create_morph_df(source_morphs, name=None, save=False):
 
     sources = pd.DataFrame(sources)
     sources.set_index('ID', inplace=True)
+    sources.sort_index(inplace=True)
     if save:
         if name is not None:
             sources.to_csv(name)
@@ -173,8 +174,8 @@ def get_mah_all(mah_dir: str = 'data/gadgetx3k_20/AHFHaloHistory') -> dict:
     for f in sorted(os.listdir(mah_dir)):
         file = mah_dir + f
         mm0 = get_mah(file)
-        id = find_id(file)
-        mah_df_dict[id] = mm0
+        idx = find_id(file)
+        mah_df_dict[idx] = mm0
     return mah_df_dict
 
 
