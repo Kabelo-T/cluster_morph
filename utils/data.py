@@ -10,7 +10,8 @@ import utils.corrs as corutils
 
 
 def bootstrap(combined_df: pd.DataFrame,
-              sample_size: int = None) -> list[pd.Series]:
+              sample_size: int = None,
+              seed: list | int = None) -> list[pd.Series]:
     """Bootstrap the spearman correlation coefficients for the mass accretion 
     histories and the dynamical state parameters (aexp = 1)
 
@@ -19,7 +20,7 @@ def bootstrap(combined_df: pd.DataFrame,
     combined_df : pd.DataFrame
         Dataframe of mass accretion history and morphology/dynamical state
     sample_size : int, optional
-
+    seed : list|int, optional
     Returns
     -------
     list[pd.Series]
@@ -28,11 +29,24 @@ def bootstrap(combined_df: pd.DataFrame,
     if sample_size is None:
         sample_size = len(combined_df)
 
-    corrs_list = [
-        combined_df.sample(n=sample_size, replace=True).corr(
-            method='spearman')['M/M0']
-        for _ in range(100)
-    ]
+    if type(seed) is list:  # if seed is a list, use it to sample
+        corrs_list = [
+            combined_df.sample(n=sample_size, replace=True,
+                               random_state=s).corr(method='spearman')['M/M0']
+            for s in seed
+        ]
+    elif type(seed) is int:
+        corrs_list = [
+            combined_df.sample(n=sample_size, replace=True,
+                               random_state=seed).corr(method='spearman')['M/M0']
+            for _ in range(100)
+        ]
+    else:
+        corrs_list = [
+            combined_df.sample(n=sample_size, replace=True).corr(
+                method='spearman')['M/M0']
+            for _ in range(100)
+        ]
     return corrs_list
 
 
@@ -55,8 +69,8 @@ def get_perc(df_dict: dict, param: str, q: int) -> list[float]:
     """
 
     percs = []
-    for k in df_dict.keys():
-        corrs_list = bootstrap(df_dict[k])
+    for redshift in df_dict.keys():
+        corrs_list = bootstrap(df_dict[redshift])
         param_list = sorted([series[param] for series in corrs_list])
         percs.append(np.percentile(param_list, q=q))
     return percs
@@ -85,6 +99,19 @@ def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
 
 
 def define_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]:
+    """Sort by strictly increasing aexp and interpolate the mass accretion
+    histories to a common set of aexp values.
+
+    Parameters
+    ----------
+    df_dict : dict[int, pd.DataFrame]
+        _description_
+
+    Returns
+    -------
+    tuple[np.ndarray, np.ndarray]
+        Mass accretion histories and common aexp values
+    """
     redshifts = unique_redshifts(df_dict)
     aexp = 1/(1+np.array(redshifts))
     min_a = np.min(aexp)
