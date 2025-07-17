@@ -62,7 +62,7 @@ def plot_light(object, zoomed_region, zoom_size):
     return
 
 
-def plot_corr_matrix(corr_matrix: pd.DataFrame):
+def plot_corr_matrix(corr_matrix: pd.DataFrame, title: str, **kwargs):
     """Plot the Correlation Matrix as a heatmap
 
     Parameters
@@ -71,10 +71,13 @@ def plot_corr_matrix(corr_matrix: pd.DataFrame):
         correlations of all the parameters
     """
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
-    plt.figure(figsize=(25, 25))
-    fhm = sns.heatmap(corr_matrix, mask=mask,
-                      cmap='coolwarm', square=True)
-    plt.title('Full Spearman Correlation Matrix Heatmap')
+    plt.figure(figsize=(14, 14))
+    fhm = sns.heatmap(data=corr_matrix, mask=mask, cmap='coolwarm', 
+            square=True, cbar_kws={"shrink": 0.3},
+            annot_kws={"size": 7, "weight": "bold"}, fmt='.2f',  **kwargs)
+    plt.title(title)
+    plt.tight_layout()
+    plt.xticks(rotation=45, ha='right')
     plt.show()
     return
 

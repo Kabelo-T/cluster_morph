@@ -17,11 +17,12 @@ def load_existing_results(filename):
     return finished_idx
 
 
-def process_one(file, annulus, r1, r2, map_dir, finished_idx):
+def process_one(file, annulus, r1, r2, map_dir, finished_idx=None):
     idx = futils.find_id(file)
-    if idx in finished_idx:
-        print(f'Already processed {idx}')
-        return idx, None
+    # if idx in finished_idx:
+    #     print(f'Already processed {idx}')
+    #     return idx, None
+
     mass_map = futils.load_map(file, map_dir)
     if mass_map is None:
         print(f'Skipping region {idx}: no map')
@@ -46,8 +47,6 @@ def process_one(file, annulus, r1, r2, map_dir, finished_idx):
 
 
 def morph(map_dir, annulus=False, r1=1, r2=50):
-    filename = "results/gadgetx3k_100_rin50.0kpc_rout1.0Mpc_.csv"
-    finished_idx = load_existing_results(filename)
     morphs_list = []
     files_list = sorted(os.listdir(map_dir))
     total = len(files_list)
@@ -57,13 +56,17 @@ def morph(map_dir, annulus=False, r1=1, r2=50):
 
     with ProcessPoolExecutor(max_workers=4) as executor:
         futures = {
-            executor.submit(process_one, file, annulus, r1, r2, map_dir, finished_idx): file
+            executor.submit(process_one, file, annulus, r1, r2, map_dir): file
             for file in files_list
         }
 
         for future in as_completed(futures):
             file = futures[future]
-            idx, morph_result = future.result()
+            try:
+                idx, morph_result = future.result()
+            except Exception as e:
+                print(f"Error processing {file}: {e}")
+                continue
             processed += 1
 
             if morph_result is not None:
@@ -74,18 +77,17 @@ def morph(map_dir, annulus=False, r1=1, r2=50):
             if len(morphs_list) % 20 == 0:
                 save_results(morphs_list, r1, r2, annulus)
 
-    save_results(morphs_list, r1, r2, annulus, final=True)
+    save_results(morphs_list, r1, r2, annulus)
 
 
-def save_results(morphs_list, r1, r2, annulus, final=False):
+def save_results(morphs_list, r1, r2, annulus):
     if annulus:
         rad2 = r2.to(u.kpc).value
         rad1 = r1.to(u.Mpc).value
-        name = f'results/gadgetx3k_{len(morphs_list)}_rin{rad2}kpc_rout{rad1}Mpc.csv'
+        name = f'results/yz/rin{rad2}kpc_rout{rad1}Mpc_{len(morphs_list)}.csv'
     else:
         rad1 = r1.to(u.Mpc).value
-        suffix = "final" if final else ""
-        name = f'results/gadgetx3k_{len(morphs_list)}_{rad1}Mpc.csv'
+        name = f'results/yz/r_{rad1}Mpc_{len(morphs_list)}.csv'
 
     futils.create_morph_df(morphs_list, name=name, save=True)
 
