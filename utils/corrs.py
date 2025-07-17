@@ -13,7 +13,7 @@ def build_ma_corrs(mah_df_dict: dict[pd.DataFrame],
     redshifts = datutils.unique_redshifts(mah_df_dict)
     for z in redshifts:
         mah_df = datutils.ma(z, mah_df_dict)
-        if len(mah_df) < 120:
+        if len(mah_df) < 200:
             continue
 
         mah_df.set_index('ID', inplace=True)
