@@ -76,6 +76,15 @@ def get_perc(df_dict: dict, param: str, q: int) -> list[float]:
     return percs
 
 
+def get_percs(df_dict: dict, param:str) -> list[list]:
+    p10 = get_perc(df_dict, param=param, q=10)
+    p25 = get_perc(df_dict, param=param, q=25)
+    p50 = get_perc(df_dict, param=param, q=50)
+    p75 = get_perc(df_dict, param=param, q=75)
+    p90 = get_perc(df_dict, param=param, q=90)
+    return p10, p25, p50, p75, p90
+
+
 def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
     """Convert from physical units to pixels
 

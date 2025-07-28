@@ -168,9 +168,9 @@ def get_mah(file: str) -> pd.DataFrame:
     return mm0
 
 
-def get_mah_all(mah_dir: str = 'data/gadgetx3k_20/AHFHaloHistory') -> dict:
+def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory') -> dict:
     mah_df_dict = {}
-    mah_dir = 'data/gadgetx3k_20/AHFHaloHistory/'
+    mah_dir = 'data/gadgetx3k/AHFHaloHistory/'
     for f in sorted(os.listdir(mah_dir)):
         file = mah_dir + f
         mm0 = get_mah(file)
@@ -187,7 +187,7 @@ def get_morphologies(sm_dir: str) -> pd.DataFrame:
     return sm_df
 
 
-def get_ds_theory_today(file_path: str = 'data/gadgetx3k_20/GadgetX-DS-theory-snap-128.txt'):
+def get_ds_theory_today(file_path: str = 'data/gadgetx3k/GadgetX-DS-theory-snap-128.txt'):
     ds_z0 = {}
     with open(file_path) as f:
         for i, x in enumerate(f):
@@ -198,7 +198,7 @@ def get_ds_theory_today(file_path: str = 'data/gadgetx3k_20/GadgetX-DS-theory-sn
     return ds_z0
 
 
-def get_ds(file: str = 'data/gadgetx3k_20/G3X_progenitors/DS_G3X_snap_128_center-cluster_progenitors.txt') -> pd.DataFrame:
+def get_ds(file: str = 'data/gadgetx3k/G3X_progenitors/DS_G3X_snap_128_center-cluster_progenitors.txt') -> pd.DataFrame:
     dsdf = pd.read_csv(file, sep=r'\s+', header=0)
     int_columns = [0, 1, 2, 7]
     column_names = dsdf.columns

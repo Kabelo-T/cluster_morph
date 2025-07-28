@@ -46,7 +46,7 @@ def process_one(file, annulus, r1, r2, map_dir, finished_idx=None):
     return idx, morph[0]
 
 
-def morph(map_dir, annulus=False, r1=1, r2=50):
+def morph(map_dir, annulus=False, r1=1, r2=50, out_dir='.'):
     morphs_list = []
     files_list = sorted(os.listdir(map_dir))
     total = len(files_list)
@@ -75,19 +75,19 @@ def morph(map_dir, annulus=False, r1=1, r2=50):
             print(f"Done {file} ({processed}/{total})")
 
             if len(morphs_list) % 20 == 0:
-                save_results(morphs_list, r1, r2, annulus)
+                save_results(morphs_list, r1, r2, annulus, out_dir)
 
-    save_results(morphs_list, r1, r2, annulus)
+    save_results(morphs_list, r1, r2, annulus, out_dir)
 
 
-def save_results(morphs_list, r1, r2, annulus):
+def save_results(morphs_list, r1, r2, annulus, out_dir):
     if annulus:
         rad2 = r2.to(u.kpc).value
         rad1 = r1.to(u.Mpc).value
-        name = f'results/yz/rin{rad2}kpc_rout{rad1}Mpc_{len(morphs_list)}.csv'
+        name = f'results/{out_dir}/rin{rad2}kpc_rout{rad1}Mpc_{len(morphs_list)}.csv'
     else:
         rad1 = r1.to(u.Mpc).value
-        name = f'results/yz/r_{rad1}Mpc_{len(morphs_list)}.csv'
+        name = f'results/{out_dir}/r_{rad1}Mpc_{len(morphs_list)}.csv'
 
     futils.create_morph_df(morphs_list, name=name, save=True)
 
@@ -102,11 +102,14 @@ if __name__ == "__main__":
                         help="Inner radius in kpc, default=50")
     parser.add_argument("--annulus", action="store_true",
                         help="Use annulus mask")
+    parser.add_argument("--out_dir", type=str, default='./',
+                        help="Output directory under results/")
     args = parser.parse_args()
 
     morph(
         map_dir=args.map_dir,
         annulus=args.annulus,
         r1=args.r1,
-        r2=args.r2
+        r2=args.r2,
+        out_dir=args.out_dir
     )
