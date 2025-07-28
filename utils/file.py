@@ -170,7 +170,6 @@ def get_mah(file: str) -> pd.DataFrame:
 
 def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory') -> dict:
     mah_df_dict = {}
-    mah_dir = 'data/gadgetx3k/AHFHaloHistory/'
     for f in sorted(os.listdir(mah_dir)):
         file = mah_dir + f
         mm0 = get_mah(file)
