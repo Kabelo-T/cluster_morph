@@ -9,6 +9,14 @@ import utils.file as futils
 import utils.data as datutils
 
 
+plt.rcParams['xtick.labelsize'] = 13
+plt.rcParams['ytick.labelsize'] = 13
+plt.rcParams['axes.labelsize'] = 18
+plt.rcParams["axes.titlesize"] = 18
+plt.rcParams["mathtext.fontset"] = "cm"
+plt.rcParams["font.family"] = "serif"
+
+
 def display_img(image: np.array, axs, segmap: np.array = None,
                 mask: np.array = None, vmin=None, vmax=None, **kwargs):
     """Display an image, masked or unmasked. May plot alongside segmentation map
@@ -138,7 +146,7 @@ def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
             plt.show()
 
 
-def plot_mah(indx: int, axs: plt.Axes, clean=False,
+def plot_mah(indx: int, axs: plt.Axes, clean=False, highlight=False,
              mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/'):
 
     state = {0: "Relaxed",
@@ -147,17 +155,17 @@ def plot_mah(indx: int, axs: plt.Axes, clean=False,
     ds_z0 = futils.get_ds_theory_today(
         'data/gadgetx3k/GadgetX-DS-theory-snap-128.txt')
 
-    axs.set_title(f'ID {indx} | {state[ds_z0[indx]]}')
+    # axs.set_title(f'ID {indx} | {state[ds_z0[indx]]}')
     mah_file = f'{mah_dir}/NewMDCLUSTER_{str(indx).zfill(4)}_halo_128000000000001.dat'
 
     if clean:
         mah_df_dict = futils.get_mah_all(mah_dir=mah_dir)
         axs.plot(mah_df_dict[indx]['M/M0'], mah_df_dict[indx]['aexp'])
-        axs.set_xlabel('aexp')
-        axs.set_ylabel('M/M0')
+        axs.set_xlabel('Scale Factor a = 1/(1+z)')
+        axs.set_ylabel('m(a)')
     else:
         mm0 = futils.get_mah(mah_file)
         axs.plot(mm0['aexp'], mm0['M/M0'], label='total')
-        axs.set_xlabel('aexp')
-        axs.set_ylabel('M/M0')
+        axs.set_xlabel('Scale Factor a = 1/(1+z)')
+        axs.set_ylabel('m(a)')
     return

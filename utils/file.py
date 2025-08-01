@@ -140,6 +140,7 @@ def load_map(file, map_dir):
     try:
         map = fits.open(map_file)
     except FileNotFoundError:
+        print('File not found.')
         return None
 
     map = fits.open(map_file)
