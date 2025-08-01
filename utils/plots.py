@@ -138,12 +138,12 @@ def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
 
 
 def plot_mah(indx: int, axs: plt.Axes,
-             mah_dir: str = 'data/gadgetx3k_20/AHFHaloHistory'):
+             mah_dir: str = 'data/gadgetx3k/AHFHaloHistory'):
     state = {0: "Relaxed",
              1: "Disturbed"}
 
     ds_z0 = futils.get_ds_theory_today(
-        'data/gadgetx3k_20/GadgetX-DS-theory-snap-128.txt')
+        'data/gadgetx3k/GadgetX-DS-theory-snap-128.txt')
 
     axs.set_title(f'ID {indx} | {state[ds_z0[indx]]}')
     mah_file = f'{mah_dir}/NewMDCLUSTER_{str(indx).zfill(4)}_halo_128000000000001.dat'

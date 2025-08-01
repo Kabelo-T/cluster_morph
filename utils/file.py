@@ -3,6 +3,8 @@ import os
 import pandas as pd
 from astropy.io import fits
 
+import utils.data as datutils
+
 
 def print_src_morphs(source_morphs, index=0):
 
@@ -175,6 +177,8 @@ def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/') -> dict:
         mm0 = get_mah(file)
         idx = find_id(file)
         mah_df_dict[idx] = mm0
+    
+    # mah, common_aexp = datutils.define
     return mah_df_dict
 
 
