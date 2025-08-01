@@ -6,6 +6,7 @@ from matplotlib.colors import LogNorm
 import seaborn as sns
 
 import utils.file as futils
+import utils.data as datutils
 
 
 def display_img(image: np.array, axs, segmap: np.array = None,
@@ -137,8 +138,9 @@ def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
             plt.show()
 
 
-def plot_mah(indx: int, axs: plt.Axes,
-             mah_dir: str = 'data/gadgetx3k/AHFHaloHistory'):
+def plot_mah(indx: int, axs: plt.Axes, clean=False,
+             mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/'):
+
     state = {0: "Relaxed",
              1: "Disturbed"}
 
@@ -147,8 +149,15 @@ def plot_mah(indx: int, axs: plt.Axes,
 
     axs.set_title(f'ID {indx} | {state[ds_z0[indx]]}')
     mah_file = f'{mah_dir}/NewMDCLUSTER_{str(indx).zfill(4)}_halo_128000000000001.dat'
-    mm0 = futils.get_mah(mah_file)
-    axs.plot(mm0['aexp'], mm0['M/M0'], label='total')
-    axs.set_xlabel('aexp')
-    axs.set_ylabel('M/M0')
+
+    if clean:
+        mah_df_dict = futils.get_mah_all(mah_dir=mah_dir)
+        axs.plot(mah_df_dict[indx]['M/M0'], mah_df_dict[indx]['aexp'])
+        axs.set_xlabel('aexp')
+        axs.set_ylabel('M/M0')
+    else:
+        mm0 = futils.get_mah(mah_file)
+        axs.plot(mm0['aexp'], mm0['M/M0'], label='total')
+        axs.set_xlabel('aexp')
+        axs.set_ylabel('M/M0')
     return

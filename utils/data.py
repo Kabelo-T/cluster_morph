@@ -76,7 +76,7 @@ def get_perc(df_dict: dict, param: str, q: int) -> list[float]:
     return percs
 
 
-def get_percs(df_dict: dict, param:str) -> list[list]:
+def get_percs(df_dict: dict, param: str) -> list[list]:
     p10 = get_perc(df_dict, param=param, q=10)
     p25 = get_perc(df_dict, param=param, q=25)
     p50 = get_perc(df_dict, param=param, q=50)
@@ -125,7 +125,7 @@ def define_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]
     aexp = 1/(1+np.array(redshifts))
     min_a = np.min(aexp)
     max_a = np.max(aexp)
-    common_aexp = np.linspace(min_a+0.1, max_a-0.1, 80)
+    common_aexp = np.linspace(min_a+0.1, max_a-0.1, 150)
 
     mah = np.full(shape=(len(df_dict), len(common_aexp)),
                   fill_value=np.nan)

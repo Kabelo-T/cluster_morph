@@ -171,14 +171,22 @@ def get_mah(file: str) -> pd.DataFrame:
 
 
 def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/') -> dict:
-    mah_df_dict = {}
+    df_dict = {}
     for f in sorted(os.listdir(mah_dir)):
         file = mah_dir + f
         mm0 = get_mah(file)
         idx = find_id(file)
-        mah_df_dict[idx] = mm0
-    
-    # mah, common_aexp = datutils.define
+        df_dict[idx] = mm0
+
+    mah, common_aexp = datutils.define_ma(df_dict)
+    mah_df_dict = {}
+    for i, key in enumerate(df_dict.keys()):
+        df = pd.DataFrame(columns=['M/M0', 'Redshift', 'aexp'])
+        df['M/M0'] = mah[i]
+        df['aexp'] = common_aexp
+        df['Redshift'] = (1/df['aexp']) - 1
+        mah_df_dict[key] = df
+
     return mah_df_dict
 
 
