@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import astropy.units as u
 from astropy.io import fits
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d, UnivariateSpline
 
 import utils.corrs as corutils
 
@@ -107,14 +107,36 @@ def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
     return radius
 
 
-def define_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]:
-    """Sort by strictly increasing aexp and interpolate the mass accretion
-    histories to a common set of aexp values.
+def define_ma(mm0: pd.DataFrame) -> pd.DataFrame:
+    """Makes mass accretion history monotonic
+
+    Parameters
+    ----------
+    mm0 : pd.DataFrame
+        mass accretion history
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    m = 0
+    n = len(mm0) - 1
+    for i in range(n):
+        mass = mm0.iloc[i, 0]
+        if mass > m:
+            m = mass
+        elif mass < m:
+            mm0.iloc[i, 0] = m
+    return mm0
+
+
+def interp_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]:
+    """Interpolate the mass accretion histories to a common set of aexp values.
 
     Parameters
     ----------
     df_dict : dict[int, pd.DataFrame]
-        _description_
+        dictionary of each region's mass accretion history
 
     Returns
     -------
@@ -125,29 +147,36 @@ def define_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]
     aexp = 1/(1+np.array(redshifts))
     min_a = np.min(aexp)
     max_a = np.max(aexp)
-    common_aexp = np.linspace(min_a+0.1, max_a-0.1, 150)
+    num_scales = 150
+    common_aexp = np.linspace(min_a+0.05, max_a-0.05, num_scales)
 
-    mah = np.full(shape=(len(df_dict), len(common_aexp)),
+    mah = np.full(shape=(len(df_dict), num_scales),
                   fill_value=np.nan)
 
     for i, df in enumerate(df_dict.values()):
         a = df['aexp'].values
         m = df['M/M0'].values
+        interp_func = interp1d(a, m, kind='cubic', bounds_error=False,
+                               fill_value=np.nan)
 
-        sort_idx = np.argsort(a)
-        a, m = a[sort_idx], m[sort_idx]
-
-        interp_func = interp1d(
-            a, m,
-            bounds_error=False,
-            fill_value=np.nan
-        )
+        # interp_func = UnivariateSpline(a, m, s=0.5)
 
         mah[i] = interp_func(common_aexp)
     return mah, common_aexp
 
 
-def ma(redshift, mah_dict) -> pd.DataFrame:
+def ma_zbin(redshift: float, mah_dict: dict[pd.DataFrame]) -> pd.DataFrame:
+    """Gets the m(a) values for all regions at this redshift
+
+    Parameters
+    ----------
+    redshift : float
+    mah_dict : dict[pd.DataFrame]
+
+    Returns
+    -------
+    pd.DataFrame
+    """
     mah_df = pd.DataFrame(columns=['ID', 'M/M0'])
     for region in mah_dict.keys():
         row = mah_dict[region].loc[mah_dict[region]

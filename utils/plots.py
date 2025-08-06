@@ -146,7 +146,7 @@ def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
             plt.show()
 
 
-def plot_mah(indx: int, axs: plt.Axes, clean=False, highlight=False,
+def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
              mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/'):
 
     state = {0: "Relaxed",
@@ -158,7 +158,7 @@ def plot_mah(indx: int, axs: plt.Axes, clean=False, highlight=False,
     # axs.set_title(f'ID {indx} | {state[ds_z0[indx]]}')
     mah_file = f'{mah_dir}/NewMDCLUSTER_{str(indx).zfill(4)}_halo_128000000000001.dat'
 
-    if clean:
+    if am:
         mah_df_dict = futils.get_mah_all(mah_dir=mah_dir)
         axs.plot(mah_df_dict[indx]['M/M0'], mah_df_dict[indx]['aexp'])
         axs.set_xlabel('Scale Factor a = 1/(1+z)')

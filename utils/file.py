@@ -148,7 +148,7 @@ def load_map(file, map_dir):
     return map
 
 
-def get_mah(file: str) -> pd.DataFrame:
+def get_mah(file: str, clean=True) -> pd.DataFrame:
     """Load the mass accretion histories for a cluster.
 
     Parameters
@@ -162,24 +162,32 @@ def get_mah(file: str) -> pd.DataFrame:
     """
     if '.dat' not in file:
         return
+
     mah_df = pd.read_csv(file, sep=r'\s+', index_col=False)
-    mm0 = mah_df['Mvir(4)'].values/mah_df['Mvir(4)'][0]
-    mm0 = pd.DataFrame(mm0)
+    mm0 = pd.DataFrame(mah_df['Mvir(4)'].values/mah_df['Mvir(4)'][0])
     mm0.rename(columns={0: 'M/M0'}, inplace=True)
     mm0['Redshift'] = mah_df['Redshift(0)']
     mm0['aexp'] = 1 / (1+mm0['Redshift'])
-    return mm0
+    mm0.sort_values(by='aexp', inplace=True)
+    mm0.reset_index(inplace=True)
+    mm0.drop(columns='index', inplace=True)
+
+    if clean:
+        ma = datutils.define_ma(mm0)
+        return ma
+    else:
+        return mm0
 
 
-def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/') -> dict:
+def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> dict:
     df_dict = {}
     for f in sorted(os.listdir(mah_dir)):
         file = mah_dir + f
-        mm0 = get_mah(file)
+        ma = get_mah(file, clean)
         idx = find_id(file)
-        df_dict[idx] = mm0
+        df_dict[idx] = ma
 
-    mah, common_aexp = datutils.define_ma(df_dict)
+    mah, common_aexp = datutils.interp_ma(df_dict)
     mah_df_dict = {}
     for i, key in enumerate(df_dict.keys()):
         df = pd.DataFrame(columns=['M/M0', 'Redshift', 'aexp'])

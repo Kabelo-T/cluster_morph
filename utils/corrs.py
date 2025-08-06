@@ -12,7 +12,7 @@ def build_ma_corrs(mah_df_dict: dict[pd.DataFrame],
     params_dict = {}
     redshifts = datutils.unique_redshifts(mah_df_dict)
     for z in redshifts:
-        mah_df = datutils.ma(z, mah_df_dict)
+        mah_df = datutils.ma_zbin(z, mah_df_dict)
         if len(mah_df) < 200:
             continue
 
