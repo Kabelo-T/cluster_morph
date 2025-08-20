@@ -199,6 +199,43 @@ def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> 
     return mah_df_dict
 
 
+def get_ahf(file: str, clean=True) -> pd.DataFrame:
+    """Load the Amiga Halo Finder properties for a cluster.
+
+    Parameters
+    ----------
+    file : str
+
+    Returns
+    -------
+    ahf : pd.DataFrame
+    """
+    if '.dat' not in file:
+        return
+
+    ahf_df = pd.read_csv(file, sep=r'\s+', index_col=False)
+    ahf_df['aexp'] = 1 / (1+ahf_df['Redshift(0)'])
+    ahf_df.reset_index(inplace=True)
+    ahf_df.sort_values(by='aexp', inplace=True)
+    ahf_df.drop(columns=['ID(1)', 'hostHalo(2)', 'index'], inplace=True)
+    if clean:
+        ma = datutils.define_ma(ahf_df)
+        return ma
+    else:
+        return ahf_df
+
+
+def get_ahf_all(ahf_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> dict:
+    df_dict = {}
+    for f in sorted(os.listdir(ahf_dir)):
+        file = ahf_dir + f
+        ahf = get_ahf(file, clean)
+        idx = find_id(file)
+        df_dict[idx] = ahf
+
+    return df_dict
+
+
 def get_morphologies(sm_dir: str) -> pd.DataFrame:
     sm_df = pd.read_csv(sm_dir)
     sm_df.set_index('ID', inplace=True)
@@ -218,7 +255,19 @@ def get_ds_theory_today(file_path: str = 'data/gadgetx3k/GadgetX-DS-theory-snap-
     return ds_z0
 
 
-def get_ds(file: str = 'data/gadgetx3k/G3X_progenitors/DS_G3X_snap_128_center-cluster_progenitors.txt') -> pd.DataFrame:
+def get_ds(snap: int = 128) -> pd.DataFrame:
+    """Gets dynamical state dataframe for all 324 regions.
+
+    Parameters
+    ----------
+    snap : int, optional
+        snapshot number [32, 128], by default 128
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    file = f'data/gadgetx3k/G3X_progenitors/DS_G3X_snap_{snap}_center-cluster_progenitors.txt'
     dsdf = pd.read_csv(file, sep=r'\s+', header=0)
     int_columns = [0, 1, 2, 7]
     column_names = dsdf.columns

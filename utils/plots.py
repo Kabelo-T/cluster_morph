@@ -71,7 +71,9 @@ def plot_light(object, zoomed_region, zoom_size):
     return
 
 
-def plot_corr_matrix(corr_matrix: pd.DataFrame, title: str, **kwargs):
+def plot_corr_matrix(corr_matrix: pd.DataFrame, title: str, save: bool = False,
+                     fname: str = None, show_cbar: bool = False,
+                     annot_size: int = 20, **kwargs):
     """Plot the Correlation Matrix as a heatmap
 
     Parameters
@@ -82,11 +84,14 @@ def plot_corr_matrix(corr_matrix: pd.DataFrame, title: str, **kwargs):
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool))
     plt.figure(figsize=(14, 14))
     fhm = sns.heatmap(data=corr_matrix, mask=mask, cmap='coolwarm',
-                      square=True, cbar_kws={"shrink": 0.3},
-                      annot_kws={"size": 7, "weight": "bold"}, fmt='.2f',  **kwargs)
+                      square=True, cbar=show_cbar, cbar_kws={"shrink": 0.3},
+                      annot_kws={"size": annot_size, "weight": "bold"}, fmt='.2f',  **kwargs)
     plt.title(title)
     plt.tight_layout()
-    plt.xticks(rotation=45, ha='right')
+    plt.xticks(fontsize=14, rotation=45, ha='right')
+    plt.yticks(fontsize=14)
+    if save:
+        plt.savefig(f'plots/{fname}')
     plt.show()
     return
 

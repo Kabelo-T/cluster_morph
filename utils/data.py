@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import astropy.units as u
 from astropy.io import fits
-from scipy.interpolate import interp1d, UnivariateSpline
+from scipy.interpolate import make_interp_spline
 
 import utils.corrs as corutils
 
@@ -147,7 +147,7 @@ def interp_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]
     aexp = 1/(1+np.array(redshifts))
     min_a = np.min(aexp)
     max_a = np.max(aexp)
-    num_scales = 150
+    num_scales = 80  # 105 is the median, 103 is the mean
     common_aexp = np.linspace(min_a+0.05, max_a-0.05, num_scales)
 
     mah = np.full(shape=(len(df_dict), num_scales),
@@ -156,8 +156,7 @@ def interp_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]
     for i, df in enumerate(df_dict.values()):
         a = df['aexp'].values
         m = df['M/M0'].values
-        interp_func = interp1d(a, m, kind='cubic', bounds_error=False,
-                               fill_value=np.nan)
+        interp_func = make_interp_spline(a, m, k=3)
 
         # interp_func = UnivariateSpline(a, m, s=0.5)
 
@@ -185,6 +184,29 @@ def ma_zbin(redshift: float, mah_dict: dict[pd.DataFrame]) -> pd.DataFrame:
         if not row.empty:
             mah_df = pd.concat([mah_df, row], ignore_index=True)
     return mah_df
+
+
+def ahf_zbin(redshift: float, ahf_dict: dict[pd.DataFrame]) -> pd.DataFrame:
+    """Gets the parameters for all regions at this redshift
+
+    Parameters
+    ----------
+    redshift : float
+    ahf_dict : dict[pd.DataFrame]
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    cols = [col for col in ahf_dict[1].columns]
+    cols.insert(0, 'ID')
+    ahf_df = pd.DataFrame(columns=cols)
+    for region in ahf_dict.keys():
+        row = ahf_dict[region].loc[ahf_dict[region]['Redshift(0)'] == redshift]
+        row['ID'] = region
+        if not row.empty:
+            ahf_df = pd.concat([ahf_df, row], ignore_index=True)
+    return ahf_df
 
 
 def unique_redshifts(mah_df_dict: dict[pd.DataFrame]) -> list:
