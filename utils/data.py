@@ -11,7 +11,7 @@ import utils.corrs as corutils
 
 def bootstrap(combined_df: pd.DataFrame,
               sample_size: int = None,
-              seed: list | int = None) -> list[pd.Series]:
+              seed: list | int = None, history: str = 'M/M0') -> list[pd.Series]:
     """Bootstrap the spearman correlation coefficients for the mass accretion 
     histories and the dynamical state parameters (aexp = 1)
 
@@ -32,19 +32,19 @@ def bootstrap(combined_df: pd.DataFrame,
     if type(seed) is list:  # if seed is a list, use it to sample
         corrs_list = [
             combined_df.sample(n=sample_size, replace=True,
-                               random_state=s).corr(method='spearman')['M/M0']
+                               random_state=s).corr(method='spearman')[history]
             for s in seed
         ]
     elif type(seed) is int:
         corrs_list = [
             combined_df.sample(n=sample_size, replace=True,
-                               random_state=seed).corr(method='spearman')['M/M0']
+                               random_state=seed).corr(method='spearman')[history]
             for _ in range(100)
         ]
     else:
         corrs_list = [
             combined_df.sample(n=sample_size, replace=True).corr(
-                method='spearman')['M/M0']
+                method='spearman')[history]
             for _ in range(100)
         ]
     return corrs_list
@@ -186,6 +186,28 @@ def ma_zbin(redshift: float, mah_dict: dict[pd.DataFrame]) -> pd.DataFrame:
     return mah_df
 
 
+def am_mbin(mass: float, mah_dict: dict[pd.DataFrame]) -> pd.DataFrame:
+    """Gets the a(m) values for all regions at this mass fraction
+
+    Parameters
+    ----------
+    mass : float
+    mah_dict : dict[pd.DataFrame]
+
+    Returns
+    -------
+    pd.DataFrame
+    """
+    mah_df = pd.DataFrame(columns=['ID', 'aexp'])
+    for region in mah_dict.keys():
+        row = mah_dict[region].loc[mah_dict[region]
+                                   ['M/M0'] == mass, ['aexp']]
+        row['ID'] = region
+        if not row.empty:
+            mah_df = pd.concat([mah_df, row], ignore_index=True)
+    return mah_df
+
+
 def ahf_zbin(redshift: float, ahf_dict: dict[pd.DataFrame]) -> pd.DataFrame:
     """Gets the parameters for all regions at this redshift
 
@@ -218,3 +240,14 @@ def unique_redshifts(mah_df_dict: dict[pd.DataFrame]) -> list:
     redshifts = sorted(list(set(redshifts)))
 
     return redshifts
+
+
+def unique_masses(mah_df_dict: dict[pd.DataFrame]) -> list:
+    ms = [x['M/M0'].to_list() for x in mah_df_dict.values()]
+    masses = []
+    for m in ms:
+        masses.extend(m)
+
+    masses = sorted(list(set(masses)))
+
+    return masses
