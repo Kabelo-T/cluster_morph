@@ -50,7 +50,7 @@ def bootstrap(combined_df: pd.DataFrame,
     return corrs_list
 
 
-def get_perc(df_dict: dict, param: str, q: int) -> list[float]:
+def get_perc(df_dict: dict, param: str, q: int, history: str = 'M/M0') -> list[float]:
     """Get the qth percentile at each aexp, for the pearson correlations between
     mass accretion histories and dynamical state parameters
 
@@ -69,19 +69,19 @@ def get_perc(df_dict: dict, param: str, q: int) -> list[float]:
     """
 
     percs = []
-    for redshift in df_dict.keys():
-        corrs_list = bootstrap(df_dict[redshift])
+    for time in df_dict.keys():
+        corrs_list = bootstrap(df_dict[time], history=history)
         param_list = sorted([series[param] for series in corrs_list])
         percs.append(np.percentile(param_list, q=q))
     return percs
 
 
-def get_percs(df_dict: dict, param: str) -> list[list]:
-    p10 = get_perc(df_dict, param=param, q=10)
-    p25 = get_perc(df_dict, param=param, q=25)
-    p50 = get_perc(df_dict, param=param, q=50)
-    p75 = get_perc(df_dict, param=param, q=75)
-    p90 = get_perc(df_dict, param=param, q=90)
+def get_percs(df_dict: dict, param: str, history: str = 'M/M0') -> list[list]:
+    p10 = get_perc(df_dict, param=param, q=10, history=history)
+    p25 = get_perc(df_dict, param=param, q=25, history=history)
+    p50 = get_perc(df_dict, param=param, q=50, history=history)
+    p75 = get_perc(df_dict, param=param, q=75, history=history)
+    p90 = get_perc(df_dict, param=param, q=90, history=history)
     return p10, p25, p50, p75, p90
 
 
@@ -147,8 +147,8 @@ def interp_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]
     aexp = 1/(1+np.array(redshifts))
     min_a = np.min(aexp)
     max_a = np.max(aexp)
-    num_scales = 80  # 105 is the median, 103 is the mean
-    common_aexp = np.linspace(min_a+0.05, max_a-0.05, num_scales)
+    num_scales = 100  # 105 is the median, 103 is the mean, 100 is in multiCAM
+    common_aexp = np.linspace(min_a, max_a, num_scales)
 
     mah = np.full(shape=(len(df_dict), num_scales),
                   fill_value=np.nan)

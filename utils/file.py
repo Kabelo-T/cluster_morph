@@ -236,7 +236,7 @@ def get_ahf_all(ahf_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> 
     return df_dict
 
 
-def get_morphologies(sm_dir: str) -> pd.DataFrame:
+def get_morphologies(sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv') -> pd.DataFrame:
     sm_df = pd.read_csv(sm_dir)
     sm_df.set_index('ID', inplace=True)
     sm_df.drop(columns=['flag', 'flag_sersic', 'flux_circ', 'flux_ellip',
