@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import astropy.units as u
 from astropy.io import fits
-from scipy.interpolate import make_interp_spline
+from scipy.interpolate import make_interp_spline, PchipInterpolator
 
 import utils.corrs as corutils
 
@@ -107,29 +107,6 @@ def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
     return radius
 
 
-def define_ma(mm0: pd.DataFrame) -> pd.DataFrame:
-    """Makes mass accretion history monotonic
-
-    Parameters
-    ----------
-    mm0 : pd.DataFrame
-        mass accretion history
-
-    Returns
-    -------
-    pd.DataFrame
-    """
-    m = 0
-    n = len(mm0) - 1
-    for i in range(n):
-        mass = mm0.iloc[i, 0]
-        if mass > m:
-            m = mass
-        elif mass < m:
-            mm0.iloc[i, 0] = m
-    return mm0
-
-
 def interp_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]:
     """Interpolate the mass accretion histories to a common set of aexp values.
 
@@ -148,7 +125,7 @@ def interp_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]
     min_a = np.min(aexp)
     max_a = np.max(aexp)
     num_scales = 100  # 105 is the median, 103 is the mean, 100 is in multiCAM
-    common_aexp = np.linspace(min_a, max_a, num_scales)
+    common_aexp = np.linspace(min_a, 1., num_scales)
 
     mah = np.full(shape=(len(df_dict), num_scales),
                   fill_value=np.nan)
@@ -156,9 +133,8 @@ def interp_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]
     for i, df in enumerate(df_dict.values()):
         a = df['aexp'].values
         m = df['M/M0'].values
-        interp_func = make_interp_spline(a, m, k=3)
-
-        # interp_func = UnivariateSpline(a, m, s=0.5)
+        # interp_func = make_interp_spline(a, m, k=3)
+        interp_func = PchipInterpolator(a, m)
 
         mah[i] = interp_func(common_aexp)
     return mah, common_aexp

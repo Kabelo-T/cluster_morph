@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+import numpy as np
 from astropy.io import fits
 
 import utils.data as datutils
@@ -140,7 +141,7 @@ def load_map(file, map_dir):
     try:
         map = fits.open(map_file)
     except FileNotFoundError:
-        print('File not found.')
+        print(f'File {map_file} not found.')
         return None
 
     map = fits.open(map_file)
@@ -173,10 +174,9 @@ def get_mah(file: str, clean=True) -> pd.DataFrame:
     mm0.drop(columns='index', inplace=True)
 
     if clean:
-        ma = datutils.define_ma(mm0)
-        return ma
-    else:
-        return mm0
+        mm0['M/M0'] = np.fmax.accumulate(mm0['M/M0'].values)
+
+    return mm0
 
 
 def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> dict:
@@ -255,7 +255,7 @@ def get_ds_theory_today(file_path: str = 'data/gadgetx3k/GadgetX-DS-theory-snap-
     return ds_z0
 
 
-def get_ds(snap: int = 128) -> pd.DataFrame:
+def get_ds(snap: int = 128, clean=True) -> pd.DataFrame:
     """Gets dynamical state dataframe for all 324 regions.
 
     Parameters
@@ -277,8 +277,9 @@ def get_ds(snap: int = 128) -> pd.DataFrame:
             dsdf[col_name] = dsdf[col_name].astype(int)
         else:
             dsdf[col_name] = dsdf[col_name].astype(float)
+    if clean:
+        dsdf.drop(columns=['Hid[1]', 'DS_200[2]', 'DS_500[7]'], inplace=True)
 
-    dsdf.drop(columns=['Hid[1]', 'DS_200[2]', 'DS_500[7]'], inplace=True)
     dsdf.rename(columns={'rID[0]': 'ID'}, inplace=True)
     dsdf.set_index('ID', inplace=True)
     return dsdf

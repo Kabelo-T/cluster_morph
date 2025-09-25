@@ -154,23 +154,32 @@ def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
 def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
              mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/'):
 
-    state = {0: "Relaxed",
-             1: "Disturbed"}
+    state = {0: "Disturbed",
+             1: "Relaxed"}
 
-    ds_z0 = futils.get_ds_theory_today(
-        'data/gadgetx3k/GadgetX-DS-theory-snap-128.txt')
-
-    # axs.set_title(f'ID {indx} | {state[ds_z0[indx]]}')
-    mah_file = f'{mah_dir}/NewMDCLUSTER_{str(indx).zfill(4)}_halo_128000000000001.dat'
+    # mah_file = f'{mah_dir}/NewMDCLUSTER_{str(indx).zfill(4)}_halo_128000000000001.dat'
+    dsdf = futils.get_ds(snap=125, clean=False)
+    mah_df_dict = futils.get_mah_all(mah_dir=mah_dir)
+    ds = int(dsdf.loc[[indx]]['DS_200[2]'].values[0])
+    axs.set_title(f'ID {indx} | {state[ds]}')
 
     if am:
-        mah_df_dict = futils.get_mah_all(mah_dir=mah_dir)
-        axs.plot(mah_df_dict[indx]['M/M0'], mah_df_dict[indx]['aexp'])
-        axs.set_xlabel('Scale Factor a = 1/(1+z)')
-        axs.set_ylabel('m(a)')
+        axs.set_xlabel('m = M/M(z=0)')
+        axs.set_ylabel('a(m)')
+        for k, df in mah_df_dict.items():
+            if k == indx:
+                axs.plot(df['M/M0'], df['aexp'], lw=5, color='red')
+            else:
+                axs.plot(df['M/M0'], df['aexp'],
+                         color='black', alpha=0.3, lw=1)
+
     else:
-        mm0 = futils.get_mah(mah_file)
-        axs.plot(mm0['aexp'], mm0['M/M0'], label='total')
         axs.set_xlabel('Scale Factor a = 1/(1+z)')
         axs.set_ylabel('m(a)')
+        for k, df in mah_df_dict.items():
+            if k == indx:
+                axs.plot(df['aexp'], df['M/M0'], lw=5, color='red')
+            else:
+                axs.plot(df['aexp'], df['M/M0'],
+                         color='black', alpha=0.3, lw=1)
     return
