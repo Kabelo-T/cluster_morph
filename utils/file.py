@@ -165,18 +165,20 @@ def get_mah(file: str, clean=True) -> pd.DataFrame:
         return
 
     mah_df = pd.read_csv(file, sep=r'\s+', index_col=False)
-    mm0 = pd.DataFrame(mah_df['Mvir(4)'].values/mah_df['Mvir(4)'][0])
-    mm0.rename(columns={0: 'M/M0'}, inplace=True)
-    mm0['Redshift'] = mah_df['Redshift(0)']
-    mm0['aexp'] = 1 / (1+mm0['Redshift'])
-    mm0.sort_values(by='aexp', inplace=True)
-    mm0.reset_index(inplace=True)
-    mm0.drop(columns='index', inplace=True)
+    masses = mah_df['Mvir(4)'][::-1]
+    mpeak_a1 = np.max(mah_df['Mvir(4)'])
+    norm_masses = []
+    for i, m in enumerate(masses):
+        mpeak = np.max(masses[:i+1])
+        norm_masses.append(mpeak/mpeak_a1)
 
-    if clean:
-        mm0['M/M0'] = np.fmax.accumulate(mm0['M/M0'].values)
+    ma = pd.DataFrame(columns=['aexp', 'M/M0', 'redshift'])
+    ma['M/M0'] = norm_masses[::-1]
+    ma['redshift'] = mah_df['Redshift(0)']
+    ma['aexp'] = 1 / (1+ma['redshift'])
+    ma.sort_values(by='aexp', inplace=True)
 
-    return mm0
+    return ma
 
 
 def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> dict:
