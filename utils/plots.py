@@ -152,12 +152,12 @@ def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
 
 
 def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
-             mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/'):
+             mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/',
+             show_relaxed: bool = False, show_disturbed:bool = False) -> None:
 
     state = {0: "Disturbed",
              1: "Relaxed"}
 
-    # mah_file = f'{mah_dir}/NewMDCLUSTER_{str(indx).zfill(4)}_halo_128000000000001.dat'
     dsdf = futils.get_ds(snap=125, clean=False)
     mah_df_dict = futils.get_mah_all(mah_dir=mah_dir)
     ds = int(dsdf.loc[[indx]]['DS_200[2]'].values[0])
@@ -170,8 +170,10 @@ def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
             if k == indx:
                 axs.plot(df['M/M0'], df['aexp'], lw=5, color='red')
             else:
-                axs.plot(df['M/M0'], df['aexp'],
-                         color='black', alpha=0.3, lw=1)
+                ds = int(dsdf.loc[[k]]['DS_200[2]'].values[0])
+                if (ds == 1 and show_relaxed) or (ds == 0 and show_disturbed):
+                    axs.plot(df['M/M0'], df['aexp'],
+                            color='black', alpha=0.3, lw=1)
 
     else:
         axs.set_xlabel('Scale Factor a = 1/(1+z)')
@@ -180,6 +182,9 @@ def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
             if k == indx:
                 axs.plot(df['aexp'], df['M/M0'], lw=5, color='red')
             else:
-                axs.plot(df['aexp'], df['M/M0'],
-                         color='black', alpha=0.3, lw=1)
+                ds = int(dsdf.loc[[k]]['DS_200[2]'].values[0])
+                if (ds == 1 and show_relaxed) or (ds == 0 and show_disturbed):
+                    axs.plot(df['aexp'], df['M/M0'],
+                            color='black', alpha=0.3, lw=1)
+                    
     return
