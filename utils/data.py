@@ -208,7 +208,7 @@ def ahf_zbin(redshift: float, ahf_dict: dict[pd.DataFrame]) -> pd.DataFrame:
 
 
 def unique_redshifts(mah_df_dict: dict[pd.DataFrame]) -> list:
-    zs = [x['redshift'].to_list() for x in mah_df_dict.values()]
+    zs = [x['Redshift'].to_list() for x in mah_df_dict.values()]
     redshifts = []
     for z in zs:
         redshifts.extend(z)

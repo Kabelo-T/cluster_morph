@@ -174,8 +174,8 @@ def get_mah(file: str, clean=True) -> pd.DataFrame:
 
     ma = pd.DataFrame(columns=['aexp', 'M/M0', 'redshift'])
     ma['M/M0'] = norm_masses[::-1]
-    ma['redshift'] = mah_df['Redshift(0)']
-    ma['aexp'] = 1 / (1+ma['redshift'])
+    ma['Redshift'] = mah_df['Redshift(0)']
+    ma['aexp'] = 1 / (1+ma['Redshift'])
     ma.sort_values(by='aexp', inplace=True)
 
     return ma
