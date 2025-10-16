@@ -269,7 +269,7 @@ def get_ds(snap: int = 128, clean=True) -> pd.DataFrame:
     -------
     pd.DataFrame
     """
-    file = f'data/gadgetx3k/G3X_progenitors/DS_G3X_snap_{snap}_center-cluster_progenitors.txt'
+    file = f'data/gadgetx3k/G3X_progenitors/DS_G3X_snap_{str(snap).zfill(3)}_center-cluster_progenitors.txt'
     dsdf = pd.read_csv(file, sep=r'\s+', header=0)
     int_columns = [0, 1, 2, 7]
     column_names = dsdf.columns

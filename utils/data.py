@@ -32,6 +32,7 @@ def bootstrap(combined_df: pd.DataFrame,
     if type(seed) is list:  # if seed is a list, use it to sample
         corrs_list = [
             combined_df.sample(n=sample_size, replace=True,
+                               # really need to drop this history column
                                random_state=s).corr(method='spearman')[history]
             for s in seed
         ]
