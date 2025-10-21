@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import numpy as np
 from astropy.io import fits
+from astropy import units as u
 
 import utils.data as datutils
 
@@ -220,11 +221,8 @@ def get_ahf(file: str, clean=True) -> pd.DataFrame:
     ahf_df.reset_index(inplace=True)
     ahf_df.sort_values(by='aexp', inplace=True)
     ahf_df.drop(columns=['ID(1)', 'hostHalo(2)', 'index'], inplace=True)
-    if clean:
-        ma = datutils.define_ma(ahf_df)
-        return ma
-    else:
-        return ahf_df
+
+    return ahf_df
 
 
 def get_ahf_all(ahf_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> dict:
@@ -236,6 +234,37 @@ def get_ahf_all(ahf_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> 
         df_dict[idx] = ahf
 
     return df_dict
+
+
+def get_virial_radius(idx: int = None, file: str = None) -> float:
+    """Get the virial radius for a given halo at z = 0, in units of h^-1 kpc.
+
+    Virial radius is defined at some overdensity above critical density, defined by the ovdens column. 
+
+    Parameters
+    ----------
+    idx : int, optional
+        cluster id, by default None
+    file : str, optional
+        can also specify by file, by default None
+
+    Returns
+    -------
+    float
+        virial radius in units of h^-1 kpc
+    """
+    if idx is None and file is None:
+        print('Must specify either ID or file')
+        return None
+
+    if file is None:
+        file = f'data/gadgetx3k/AHFHaloHistory/NewMDCLUSTER_{str(idx).zfill(4)}_halo_128000000000001.dat'
+
+    ahf = get_ahf(file)
+    rvir = ahf.loc[ahf['Redshift(0)'] == 0.0, 'Rvir(12)'].values[0]
+    ovdens = ahf.loc[ahf['Redshift(0)'] == 0.0, 'ovdens(36)'].values[0]
+    rvir = rvir * u.kpc
+    return rvir, ovdens
 
 
 def get_morphologies(sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv') -> pd.DataFrame:

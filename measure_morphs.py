@@ -9,6 +9,11 @@ import pandas as pd
 import utils.data as datutils
 import utils.image as imutils
 import utils.file as futils
+import warnings
+from pandas.errors import ParserWarning
+
+warnings.simplefilter(action='ignore', category=ParserWarning)
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 def load_existing_results(filename):
@@ -17,16 +22,16 @@ def load_existing_results(filename):
     return finished_idx
 
 
-def process_one(file, annulus, r1, r2, map_dir, finished_idx=None):
+def process_one(file, annulus, r1, r2, map_dir, use_vir=False):
     idx = futils.find_id(file)
-    # if idx in finished_idx:
-    #     print(f'Already processed {idx}')
-    #     return idx, None
 
     mass_map = futils.load_map(file, map_dir)
     if mass_map is None:
         print(f'Skipping region {idx}: no map')
         return idx, None
+
+    if use_vir:
+        r1, _ = futils.get_virial_radius(idx)
 
     pixr1 = datutils.real2pix(r1, mass_map)
     pixr2 = datutils.real2pix(r2, mass_map)
@@ -46,7 +51,7 @@ def process_one(file, annulus, r1, r2, map_dir, finished_idx=None):
     return idx, morph[0]
 
 
-def morph(map_dir, annulus=False, r1=1, r2=50, out_dir='.'):
+def morph(map_dir, annulus=False, r1=1, r2=50, out_dir='.', use_vir=False):
     morphs_list = []
     files_list = sorted(os.listdir(map_dir))
     total = len(files_list)
@@ -54,9 +59,9 @@ def morph(map_dir, annulus=False, r1=1, r2=50, out_dir='.'):
     r1 = r1 * u.Mpc
     r2 = r2 * u.kpc
 
-    with ProcessPoolExecutor(max_workers=4) as executor:
+    with ProcessPoolExecutor(max_workers=8) as executor:
         futures = {
-            executor.submit(process_one, file, annulus, r1, r2, map_dir): file
+            executor.submit(process_one, file, annulus, r1, r2, map_dir, use_vir): file
             for file in files_list
         }
 
@@ -75,19 +80,30 @@ def morph(map_dir, annulus=False, r1=1, r2=50, out_dir='.'):
             print(f"Done {file} ({processed}/{total})")
 
             if len(morphs_list) % 20 == 0:
-                save_results(morphs_list, r1, r2, annulus, out_dir)
+                save_results(morphs_list, r1, r2, annulus,
+                             out_dir, use_vir=use_vir)
 
-    save_results(morphs_list, r1, r2, annulus, out_dir)
+    save_results(morphs_list, r1, r2, annulus, out_dir, use_vir=use_vir)
 
 
-def save_results(morphs_list, r1, r2, annulus, out_dir):
+def save_results(morphs_list, r1, r2, annulus, out_dir, use_vir=False):
     if annulus:
         rad2 = r2.to(u.kpc).value
         rad1 = r1.to(u.Mpc).value
-        name = f'results/{out_dir}/rin{rad2}kpc_rout{rad1}Mpc_{len(morphs_list)}.csv'
+        if use_vir:
+            name = f'results/{out_dir}/rin{rad2}kpc_rout_R200c_{len(morphs_list)}.csv'
+        else:
+            name = f'results/{out_dir}/rin{rad2}kpc_rout{rad1}Mpc_{len(morphs_list)}.csv'
     else:
+        if use_vir:
+            name = f'results/{out_dir}/rout_R200c_{len(morphs_list)}.csv'
         rad1 = r1.to(u.Mpc).value
         name = f'results/{out_dir}/r_{rad1}Mpc_{len(morphs_list)}.csv'
+
+    # ensure output directory exists
+    outdir = os.path.dirname(name) or 'results'
+    os.makedirs(outdir, exist_ok=True)
+    print(f"Saving {len(morphs_list)} morph results -> {name}")
 
     futils.create_morph_df(morphs_list, name=name, save=True)
 
@@ -104,6 +120,8 @@ if __name__ == "__main__":
                         help="Use annulus mask")
     parser.add_argument("--out_dir", type=str, default='./',
                         help="Output directory under results/")
+    parser.add_argument("--vir", action="store_true",
+                        help="Use virial radius for r1")
     args = parser.parse_args()
 
     morph(
@@ -111,5 +129,6 @@ if __name__ == "__main__":
         annulus=args.annulus,
         r1=args.r1,
         r2=args.r2,
-        out_dir=args.out_dir
+        out_dir=args.out_dir,
+        use_vir=args.vir
     )

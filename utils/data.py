@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import astropy.units as u
 from astropy.io import fits
-from scipy.interpolate import make_interp_spline, PchipInterpolator
+from scipy.interpolate import interp1d, PchipInterpolator
 
 import utils.corrs as corutils
 
@@ -95,7 +95,7 @@ def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
         radius in Mpc
     map : np.ndarray
     scale : _type_, optional
-        size of the map, by default 5*u.Mpc
+        side length of the map, by default 5*u.Mpc
 
     Returns
     -------
@@ -228,3 +228,71 @@ def unique_masses(mah_df_dict: dict[pd.DataFrame]) -> list:
     masses = sorted(list(set(masses)))
 
     return masses
+
+
+def get_am(ma, scales, min_mass_bin, n_bins=100, log_spacing=True):
+    """
+    1. Inversion is only a well-defined process for monotonic functions, and m(a) for an
+    individual halo isn't necessarily monotonic. To solve this, the standard redefinition of a(m0)
+    is that it's the first a where m(a) > m0. (This is, for example, how Rockstar defines halfmass
+    scales.)
+
+    2. Next, first pick your favorite set of mass bins that you'll evaluate it at. I think
+    logarithmic bins spanning 0.01m(a=1) to 1m(a=1) is pretty reasonable, but you should probably
+    choose this based on the mass ranges which are the most informative.
+
+    3. Now, for each halo with masses m(a_i), measure M_peak(a_i) = max_j{ m(a_j) | j <= i}.
+
+    4. Remove (a_i, M_peak(a_i)) pairs where M_peak(a_i) = M_peak(a_{i-1}), since this will mess
+    up the inversion.
+
+    5. Use scipy.interpolate.interp1d to create a function, f(m), which evaluates a(m).
+    For stability, you'll want to run the interpolation on log(a_i) and log(M(a_i)), not a_i and M
+    (a_i).
+
+    6. Evaluate f(m) at the mass bins you decided that you liked in step 2. Now you can run your
+    pipeline on this, just like you did for m(a).
+    """
+    assert np.sum(np.isnan(ma)) == 0, (
+        "m(a) needs to be filled with `fill_value` previously."
+    )
+
+    # 1. + 2.
+    if log_spacing:
+        mass_bins = np.linspace(np.log(min_mass_bin), np.log(1.0), n_bins)
+    else:
+        mass_bins = np.log(np.linspace(min_mass_bin, 1.0, n_bins))
+
+    # 3.
+    # NOTE: Make function monotonic. We assume start is early -> late ordering.
+    # NOTE: ma should not have any cuts.
+
+    # fmax ignores nan's (except beginning ones)
+    m_peak = np.fmax.accumulate(ma, axis=1)
+
+    # 4. + 5.
+    fs = []
+    for i in range(len(m_peak)):  # pylint: disable=consider-using-enumerate
+        pairs = [(scales[0], m_peak[i][0])]
+        count = 0
+        for j in range(1, len(m_peak[i])):
+            # keep only pairs that do NOT satisfy (a_{j-1}, Ma_{j-1}) = (a_j, Ma_j)
+            if pairs[count][1] != m_peak[i][j]:
+                pairs.append((scales[j], m_peak[i][j]))
+                count += 1
+
+        assert len(pairs) != 1, (
+            "Only 1 pair added, so max reached at a -> 0, impossible."
+        )
+
+        _scales = np.array([pair[0] for pair in pairs])
+        _m_peaks = np.array([pair[1] for pair in pairs])
+        fs.append(
+            interp1d(
+                np.log(_m_peaks), np.log(_scales), bounds_error=False, fill_value=np.nan
+            )
+        )
+
+    # 6.
+    am = np.array([np.exp(f(mass_bins)) for f in fs])
+    return am, np.exp(mass_bins)
