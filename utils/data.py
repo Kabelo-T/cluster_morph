@@ -108,13 +108,16 @@ def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
     return radius
 
 
-def interp_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]:
+def interp_ma(df_dict: dict[int, pd.DataFrame], num_scales: int = 100) -> tuple[np.ndarray, np.ndarray]:
     """Interpolate the mass accretion histories to a common set of aexp values.
 
     Parameters
     ----------
     df_dict : dict[int, pd.DataFrame]
         dictionary of each region's mass accretion history
+    num_scales : int, optional
+        number of common aexp values, by default 100.
+        105 is the median, 103 is the mean, 100 is in multiCAM
 
     Returns
     -------
@@ -124,8 +127,6 @@ def interp_ma(df_dict: dict[int, pd.DataFrame]) -> tuple[np.ndarray, np.ndarray]
     redshifts = unique_redshifts(df_dict)
     aexp = 1/(1+np.array(redshifts))
     min_a = np.min(aexp)
-    max_a = np.max(aexp)
-    num_scales = 100  # 105 is the median, 103 is the mean, 100 is in multiCAM
     common_aexp = np.linspace(min_a, 1., num_scales)
 
     mah = np.full(shape=(len(df_dict), num_scales),
