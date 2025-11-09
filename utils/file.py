@@ -314,3 +314,13 @@ def get_ds(snap: int = 128, clean=True) -> pd.DataFrame:
     dsdf.rename(columns={'rID[0]': 'ID'}, inplace=True)
     dsdf.set_index('ID', inplace=True)
     return dsdf
+
+
+def get_ds_all():
+    df_dict = {}
+    for i in range(32, 129):
+        dsdf = get_ds(snap=i)
+        dsdf['snap'] = i
+        df_dict[i] = dsdf
+
+    return df_dict
