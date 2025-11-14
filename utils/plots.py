@@ -16,6 +16,20 @@ plt.rcParams["axes.titlesize"] = 18
 plt.rcParams["mathtext.fontset"] = "cm"
 plt.rcParams["font.family"] = "serif"
 
+# Colorblind-friendly color palette
+colors = [
+    '#000000',      # Black
+    '#0072B2',      # Blue
+    '#F0E442',      # Yellow
+    '#009E73',      # Bluish Green
+    '#CC79A7',      # Reddish Purple
+    '#D55E00',      # Vermilion
+    '#56B4E9',      # Sky Blue
+    '#E69F00'       # Orange
+]
+
+plt.rc('axes', prop_cycle=plt.cycler('color', colors))
+
 
 def display_img(image: np.array, axs, segmap: np.array = None,
                 mask: np.array = None, vmin=None, vmax=None, **kwargs):
@@ -153,7 +167,7 @@ def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
 
 def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
              mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/',
-             show_relaxed: bool = False, show_disturbed:bool = False) -> None:
+             show_relaxed: bool = False, show_disturbed: bool = False) -> None:
 
     state = {0: "Disturbed",
              1: "Relaxed"}
@@ -173,7 +187,7 @@ def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
                 ds = int(dsdf.loc[[k]]['DS_200[2]'].values[0])
                 if (ds == 1 and show_relaxed) or (ds == 0 and show_disturbed):
                     axs.plot(df['M/M0'], df['aexp'],
-                            color='black', alpha=0.3, lw=1)
+                             color='black', alpha=0.3, lw=1)
 
     else:
         axs.set_xlabel('Scale Factor a = 1/(1+z)')
@@ -185,6 +199,41 @@ def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
                 ds = int(dsdf.loc[[k]]['DS_200[2]'].values[0])
                 if (ds == 1 and show_relaxed) or (ds == 0 and show_disturbed):
                     axs.plot(df['aexp'], df['M/M0'],
-                            color='black', alpha=0.3, lw=1)
-                    
+                             color='black', alpha=0.3, lw=1)
+
     return
+
+
+def plot_ma_corrs(data_dict: dict, params: list[str], labels: list[str], aexp: np.array,
+                  axs, sm=True) -> None:
+
+    yticks = np.arange(0, 0.8, 0.1)
+    ylim = (0., 0.7)
+
+    for i, param in enumerate(params):
+        p50 = datutils.get_perc(
+            data_dict, param=param, q=50, history='M/M0')
+        p50 = np.abs(p50)
+        axs.plot(aexp, p50, color=colors[i], label=labels[i])
+
+        if param == 'A' or param == 'core_C':
+            p25 = datutils.get_perc(
+                data_dict, param=param, q=25, history='M/M0')
+            p75 = datutils.get_perc(
+                data_dict, param=param, q=75, history='M/M0')
+
+            if param == 'A':
+                p25[3:] = np.abs(p25[3:])
+                p75 = np.abs(p75)
+            else:
+                p25, p75 = np.abs(p25), np.abs(p75)
+
+            axs.fill_between(aexp, p25, p75, color=colors[i], alpha=0.2)
+            axs.fill_between(aexp, p25, p75, color=colors[i], alpha=0.2)
+
+    axs.set_xlabel('Scale Factor a = 1/(1+z)')
+    axs.set_ylabel(r'$|\rho_s (SM_{a=0.94}, m(a))|$')
+    axs.set_yticks(yticks)
+    axs.set_ylim(ylim)
+    axs.grid()
+    axs.legend()

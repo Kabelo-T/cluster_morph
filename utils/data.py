@@ -6,8 +6,6 @@ import astropy.units as u
 from astropy.io import fits
 from scipy.interpolate import interp1d, PchipInterpolator
 
-import utils.corrs as corutils
-
 
 def bootstrap(combined_df: pd.DataFrame,
               sample_size: int = None,
@@ -297,3 +295,33 @@ def get_am(ma, scales, min_mass_bin, n_bins=100, log_spacing=True):
     # 6.
     am = np.array([np.exp(f(mass_bins)) for f in fs])
     return am, np.exp(mass_bins)
+
+
+def prepare_ma_corrs(mah_df_dict: dict[pd.DataFrame],
+                     df0: pd.DataFrame) -> list:
+    filtered_z = []
+    params_dict = {}
+    redshifts = unique_redshifts(mah_df_dict)
+    for z in redshifts:
+        mah_df = ma_zbin(z, mah_df_dict)
+        if len(mah_df) < 200:
+            continue
+        mah_df.set_index('ID', inplace=True)
+        filtered_z.append(z)
+        df = mah_df.merge(df0, on='ID', how='inner')
+        params_dict[z] = df
+
+    return params_dict, filtered_z
+
+
+def prepare_am_corrs(am: np.ndarray, masses: np.ndarray, df0: pd.DataFrame) -> list:
+    params_dict = {}
+    mah_df = pd.DataFrame()
+    df0 = df0.reset_index()
+    df0.drop(columns=['ID'], inplace=True)
+    for i, m in enumerate(masses):
+        mah_df = pd.DataFrame({'am': am[:, i]})
+        df = pd.concat([mah_df, df0], axis=1)
+        params_dict[m] = df
+
+    return params_dict

@@ -324,3 +324,15 @@ def get_ds_all():
         df_dict[i] = dsdf
 
     return df_dict
+
+
+def get_m14(file_path: str = 'data/gadgetx3k/mag_diff_GadgetX_3k.csv') -> pd.DataFrame:
+    m14 = pd.read_csv(file_path)
+    m14.set_index('ID', inplace=True)
+
+    # # cutoffs as per Casas+24 https://iopscience.iop.org/article/10.3847/1538-4357/ad41de
+    # m14 = m14[m14['3d'] > 1.25]
+    # m14 = m14[m14['proj_x'] > 1.25]
+    # m14 = m14[m14['proj_y'] > 1.25]
+    # m14 = m14[m14['proj_z'] > 1.25]
+    return m14
