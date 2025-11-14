@@ -16,7 +16,7 @@ plt.rcParams["axes.titlesize"] = 18
 plt.rcParams["mathtext.fontset"] = "cm"
 plt.rcParams["font.family"] = "serif"
 
-# Colorblind-friendly color palette
+# Colorblind-friendly color palette https://www.nature.com/articles/nmeth.1618.pdf
 colors = [
     '#000000',      # Black
     '#0072B2',      # Blue
@@ -207,8 +207,15 @@ def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
 def plot_ma_corrs(data_dict: dict, params: list[str], labels: list[str], aexp: np.array,
                   axs, sm=True) -> None:
 
-    yticks = np.arange(0, 0.8, 0.1)
-    ylim = (0., 0.7)
+    yticks = np.arange(0, 0.9, 0.1)
+    axs.set_xlabel('Scale Factor a = 1/(1+z)')
+
+    if sm:
+        axs.set_ylabel(r'$|\rho_s (m(a)_{SM}, m(a))|$')
+        ylim = (0., 0.7)
+    else:
+        axs.set_ylabel(r'$|\rho_s (DS_{a=1}, m(a))|$')
+        ylim = (0., 0.8)
 
     for i, param in enumerate(params):
         p50 = datutils.get_perc(
@@ -216,14 +223,14 @@ def plot_ma_corrs(data_dict: dict, params: list[str], labels: list[str], aexp: n
         p50 = np.abs(p50)
         axs.plot(aexp, p50, color=colors[i], label=labels[i])
 
-        if param == 'A' or param == 'core_C':
+        if param == 'A' or param == 'core_C' or param == 'fm_200[5]' or param == 'eta_200[3]':
             p25 = datutils.get_perc(
                 data_dict, param=param, q=25, history='M/M0')
             p75 = datutils.get_perc(
                 data_dict, param=param, q=75, history='M/M0')
 
             if param == 'A':
-                p25[3:] = np.abs(p25[3:])
+                p25[3:] = np.abs(p25[3:])       # hack to fix tail of A corrs
                 p75 = np.abs(p75)
             else:
                 p25, p75 = np.abs(p25), np.abs(p75)
@@ -231,8 +238,6 @@ def plot_ma_corrs(data_dict: dict, params: list[str], labels: list[str], aexp: n
             axs.fill_between(aexp, p25, p75, color=colors[i], alpha=0.2)
             axs.fill_between(aexp, p25, p75, color=colors[i], alpha=0.2)
 
-    axs.set_xlabel('Scale Factor a = 1/(1+z)')
-    axs.set_ylabel(r'$|\rho_s (SM_{a=0.94}, m(a))|$')
     axs.set_yticks(yticks)
     axs.set_ylim(ylim)
     axs.grid()
