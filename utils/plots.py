@@ -204,6 +204,15 @@ def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
     return
 
 
+def check_neg(percentiles: list):
+    percs = np.array(percentiles)
+    r = np.sum(percs < 0) / len(percs)
+    if r > 0.5:
+        return True
+    else:
+        return False
+
+
 def plot_ma_corrs(data_dict: dict, params: list[str], labels: list[str], aexp: np.array,
                   axs, sm=True) -> None:
 
@@ -211,7 +220,7 @@ def plot_ma_corrs(data_dict: dict, params: list[str], labels: list[str], aexp: n
     axs.set_xlabel('Scale Factor a = 1/(1+z)')
 
     if sm:
-        axs.set_ylabel(r'$|\rho_s (m(a)_{SM}, m(a))|$')
+        axs.set_ylabel(r'$|\rho_s (SM_{a=0.94}, m(a))|$')
         ylim = (0., 0.7)
     else:
         axs.set_ylabel(r'$|\rho_s (DS_{a=1}, m(a))|$')
@@ -220,8 +229,14 @@ def plot_ma_corrs(data_dict: dict, params: list[str], labels: list[str], aexp: n
     for i, param in enumerate(params):
         p50 = datutils.get_perc(
             data_dict, param=param, q=50, history='M/M0')
+        flag = check_neg(p50)
         p50 = np.abs(p50)
-        axs.plot(aexp, p50, color=colors[i], label=labels[i])
+        if flag:
+            axs.plot(aexp, p50, color=colors[i],
+                     label=labels[i], linestyle='dashed')
+        else:
+            axs.plot(aexp, p50, color=colors[i],
+                     label=labels[i], linestyle='solid')
 
         if param == 'A' or param == 'core_C' or param == 'fm_200[5]' or param == 'eta_200[3]':
             p25 = datutils.get_perc(
