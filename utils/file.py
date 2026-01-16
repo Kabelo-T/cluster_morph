@@ -150,7 +150,7 @@ def load_map(file, map_dir):
     return map
 
 
-def get_mah(file: str, clean=True) -> pd.DataFrame:
+def get_mah(file: str) -> pd.DataFrame:
     """Load the mass accretion histories for a cluster.
 
     Parameters
@@ -182,11 +182,12 @@ def get_mah(file: str, clean=True) -> pd.DataFrame:
     return ma
 
 
-def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> dict:
+def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/') -> dict:
     df_dict = {}
     for f in sorted(os.listdir(mah_dir)):
         file = mah_dir + f
-        ma = get_mah(file, clean)
+        # at this point m(a) is calculated for different snapshots so inhomogenous in aexp
+        ma = get_mah(file)
         idx = find_id(file)
         df_dict[idx] = ma
 

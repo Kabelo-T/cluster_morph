@@ -136,9 +136,9 @@ def high_corr_cols(corr_matrix: pd.DataFrame, tolerance=0.7) -> list[bool]:
     return selection
 
 
-def plot_corr(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
-              low: int = 30, high=40) -> None:
-    """Plot joint distributions of the highly correlated and anti-correlated 
+def plot_joint_dist(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
+                    low: int = 30, high: int = 40) -> None:
+    """Plot joint distributions of the highly correlated and anti-correlated
     parameters
 
     Parameters
@@ -213,36 +213,43 @@ def check_neg(percentiles: list):
         return False
 
 
-def plot_ma_corrs(data_dict: dict, params: list[str], labels: list[str], aexp: np.array,
-                  axs, sm=True) -> None:
+def plot_corrs(data_dict: dict, params: list[str], labels: list[str], time: np.ndarray,
+               axs, sm=True, am=False, history='M/M0') -> None:
 
     yticks = np.arange(0, 0.9, 0.1)
-    axs.set_xlabel('Scale Factor a = 1/(1+z)')
+    if am:
+        t = 'a(m)'
+        time_label = 'm = M/M(z=0)'
+    else:
+        t = 'm(a)'
+        time_label = 'Scale Factor a = 1/(1+z)'
+
+    axs.set_xlabel(time_label)
 
     if sm:
-        axs.set_ylabel(r'$|\rho_s (SM_{a=0.94}, m(a))|$')
+        axs.set_ylabel(rf'$|\rho_s (SM_{{a=0.94}}, {t})|$')
         ylim = (0., 0.7)
     else:
-        axs.set_ylabel(r'$|\rho_s (DS_{a=1}, m(a))|$')
+        axs.set_ylabel(rf'$|\rho_s (DS_{{a=1}}, {t})|$')
         ylim = (0., 0.8)
 
     for i, param in enumerate(params):
         p50 = datutils.get_perc(
-            data_dict, param=param, q=50, history='M/M0')
+            data_dict, param=param, q=50, history=history)
         flag = check_neg(p50)
         p50 = np.abs(p50)
         if flag:
-            axs.plot(aexp, p50, color=colors[i],
+            axs.plot(time, p50, color=colors[i],
                      label=labels[i], linestyle='dashed')
         else:
-            axs.plot(aexp, p50, color=colors[i],
+            axs.plot(time, p50, color=colors[i],
                      label=labels[i], linestyle='solid')
 
         if param == 'A' or param == 'core_C' or param == 'fm_200[5]' or param == 'eta_200[3]':
             p25 = datutils.get_perc(
-                data_dict, param=param, q=25, history='M/M0')
+                data_dict, param=param, q=25, history=history)
             p75 = datutils.get_perc(
-                data_dict, param=param, q=75, history='M/M0')
+                data_dict, param=param, q=75, history=history)
 
             if param == 'A':
                 p25[3:] = np.abs(p25[3:])       # hack to fix tail of A corrs
@@ -250,8 +257,8 @@ def plot_ma_corrs(data_dict: dict, params: list[str], labels: list[str], aexp: n
             else:
                 p25, p75 = np.abs(p25), np.abs(p75)
 
-            axs.fill_between(aexp, p25, p75, color=colors[i], alpha=0.2)
-            axs.fill_between(aexp, p25, p75, color=colors[i], alpha=0.2)
+            axs.fill_between(time, p25, p75, color=colors[i], alpha=0.2)
+            axs.fill_between(time, p25, p75, color=colors[i], alpha=0.2)
 
     axs.set_yticks(yticks)
     axs.set_ylim(ylim)
