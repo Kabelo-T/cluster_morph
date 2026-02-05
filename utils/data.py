@@ -30,7 +30,6 @@ def bootstrap(combined_df: pd.DataFrame,
     if type(seed) is list:  # if seed is a list, use it to sample
         corrs_list = [
             combined_df.sample(n=sample_size, replace=True,
-                               # really need to drop this history column
                                random_state=s).corr(method='spearman')[history]
             for s in seed
         ]
@@ -297,13 +296,13 @@ def get_am(ma, scales, min_mass_bin, n_bins=100, log_spacing=True):
     return am, np.exp(mass_bins)
 
 
-def prepare_ma_corrs(mah_df_dict: dict[pd.DataFrame],
-                     df0: pd.DataFrame) -> list:
+def prepare_ma_corrs(mah_dict: dict[int, pd.DataFrame],
+                     df0: pd.DataFrame) -> tuple[dict, list]:
     filtered_z = []
     params_dict = {}
-    redshifts = unique_redshifts(mah_df_dict)
+    redshifts = unique_redshifts(mah_dict)
     for z in redshifts:
-        mah_df = ma_zbin(z, mah_df_dict)
+        mah_df = ma_zbin(z, mah_dict)
         if len(mah_df) < 200:
             continue
         mah_df.set_index('ID', inplace=True)
@@ -314,7 +313,7 @@ def prepare_ma_corrs(mah_df_dict: dict[pd.DataFrame],
     return params_dict, filtered_z
 
 
-def prepare_am_corrs(am: np.ndarray, masses: np.ndarray, df0: pd.DataFrame) -> list:
+def prepare_am_corrs(am: np.ndarray, masses: np.ndarray, df0: pd.DataFrame) -> dict:
     params_dict = {}
     mah_df = pd.DataFrame()
     df0 = df0.reset_index()

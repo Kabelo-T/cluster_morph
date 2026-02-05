@@ -227,10 +227,10 @@ def plot_corrs(data_dict: dict, params: list[str], labels: list[str], time: np.n
     axs.set_xlabel(time_label)
 
     if sm:
-        axs.set_ylabel(rf'$|\rho_s (SM_{{a=0.94}}, {t})|$')
+        axs.set_ylabel(rf'$|\rho_{{\mathrm{sp}}} (SM_{{a=0.94}}, {t})|$')
         ylim = (0., 0.7)
     else:
-        axs.set_ylabel(rf'$|\rho_s (DS_{{a=1}}, {t})|$')
+        axs.set_ylabel(rf'$|\rho_{{\mathrm{sp}}} (DS_{{a=1}}, {t})|$')
         ylim = (0., 0.8)
 
     for i, param in enumerate(params):

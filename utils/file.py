@@ -268,11 +268,20 @@ def get_virial_radius(idx: int = None, file: str = None) -> float:
     return rvir, ovdens
 
 
-def get_morphologies(sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv') -> pd.DataFrame:
+def get_morphologies(sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv', clean=False) -> pd.DataFrame:
     sm_df = pd.read_csv(sm_dir)
     sm_df.set_index('ID', inplace=True)
     sm_df.drop(columns=['flag', 'flag_sersic', 'flux_circ', 'flux_ellip',
                         'sn_per_pixel', 'runtime (s)'], inplace=True)
+    if clean:
+        sm_df.drop(columns=['xc_centroid', 'yc_centroid', 'ellipticity_asymmetry',
+                            'ellipticity_centroid', 'elongation_asymmetry', 'elongation_centroid',
+                            'orientation_centroid', 'xc_asymmetry', 'yc_asymmetry',
+                            'orientation_asymmetry', 'rpetro_circ', 'rpetro_ellip',
+                            'r20', 'r50', 'r80', 'F(G, M20)',
+                            'S(G, M20)', 'sersic_n', 'sersic_xc', 'sersic_yc',
+                            'sersic_ellip', 'sersic_theta', 'sersic_chi2_dof',
+                            'rhalf_ellip', 'M20', 'S', 'sersic_rhalf', 'Gini'], inplace=True)
     return sm_df
 
 
