@@ -8,8 +8,8 @@ from scipy.interpolate import interp1d, PchipInterpolator
 
 
 def bootstrap(combined_df: pd.DataFrame,
-              sample_size: int = None,
-              seed: list | int = None, history: str = 'M/M0') -> list[pd.Series]:
+              sample_size: int = None,  
+              seed: list | int = None, history: str = 'M/M0') -> list[pd.Series]:   
     """Bootstrap the spearman correlation coefficients for the mass accretion 
     histories and the dynamical state parameters (aexp = 1)
 
@@ -48,7 +48,7 @@ def bootstrap(combined_df: pd.DataFrame,
     return corrs_list
 
 
-def get_perc(df_dict: dict, param: str, q: int, history: str = 'M/M0') -> list[float]:
+def get_perc(df_dict: dict, param: str, q: int, history: str = 'M/M0') -> list:
     """Get the qth percentile at each aexp, for the pearson correlations between
     mass accretion histories and dynamical state parameters
 
@@ -74,7 +74,7 @@ def get_perc(df_dict: dict, param: str, q: int, history: str = 'M/M0') -> list[f
     return percs
 
 
-def get_percs(df_dict: dict, param: str, history: str = 'M/M0') -> list[list]:
+def get_percs(df_dict: dict, param: str, history: str = 'M/M0') -> tuple:
     p10 = get_perc(df_dict, param=param, q=10, history=history)
     p25 = get_perc(df_dict, param=param, q=25, history=history)
     p50 = get_perc(df_dict, param=param, q=50, history=history)
@@ -83,7 +83,7 @@ def get_percs(df_dict: dict, param: str, history: str = 'M/M0') -> list[list]:
     return p10, p25, p50, p75, p90
 
 
-def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
+def real2pix(r: u.Quantity, map: np.ndarray) -> int:
     """Convert from physical units to pixels
 
     Parameters
@@ -91,21 +91,20 @@ def real2pix(r: u.Quantity, map: np.ndarray, scale=5*u.Mpc) -> int:
     r : u.Quantity
         radius in Mpc
     map : np.ndarray
-    scale : _type_, optional
-        side length of the map, by default 5*u.Mpc
 
     Returns
     -------
     radius : int
         the length in pixels
     """
+    scale = 5*u.Mpc
     pixperMpc = map.shape[0]/scale.value
     r = r.to(u.Mpc)
     radius = int(r.value*pixperMpc)
     return radius
 
 
-def interp_ma(df_dict: dict[int, pd.DataFrame], num_scales: int = 100) -> tuple[np.ndarray, np.ndarray]:
+def interp_ma(df_dict: dict[pd.DataFrame, int], num_scales: int = 100) -> tuple[np.ndarray, np.ndarray]:
     """Interpolate the mass accretion histories to a common set of aexp values.
 
     Parameters

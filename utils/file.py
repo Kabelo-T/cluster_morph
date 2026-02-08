@@ -163,7 +163,7 @@ def get_mah(file: str) -> pd.DataFrame:
         mass accretion history as M(z)/M(z=0)
     """
     if '.dat' not in file:
-        return
+        return  # type: ignore
 
     mah_df = pd.read_csv(file, sep=r'\s+', index_col=False)
     masses = mah_df['Mvir(4)'][::-1]
@@ -215,7 +215,7 @@ def get_ahf(file: str, clean=True) -> pd.DataFrame:
     ahf : pd.DataFrame
     """
     if '.dat' not in file:
-        return
+        return  # type: ignore
 
     ahf_df = pd.read_csv(file, sep=r'\s+', index_col=False)
     ahf_df['aexp'] = 1 / (1+ahf_df['Redshift(0)'])
@@ -237,7 +237,7 @@ def get_ahf_all(ahf_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> 
     return df_dict
 
 
-def get_virial_radius(idx: int = None, file: str = None) -> float:
+def get_virial_radius(idx: int = None, file: str = None) -> tuple:
     """Get the virial radius for a given halo at z = 0, in units of h^-1 kpc.
 
     Virial radius is defined at some overdensity above critical density, defined by the ovdens column. 
@@ -268,12 +268,12 @@ def get_virial_radius(idx: int = None, file: str = None) -> float:
     return rvir, ovdens
 
 
-def get_morphologies(sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv', clean=False) -> pd.DataFrame:
+def get_morphologies(sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv', all=False) -> pd.DataFrame:
     sm_df = pd.read_csv(sm_dir)
     sm_df.set_index('ID', inplace=True)
     sm_df.drop(columns=['flag', 'flag_sersic', 'flux_circ', 'flux_ellip',
                         'sn_per_pixel', 'runtime (s)'], inplace=True)
-    if clean:
+    if not all:
         sm_df.drop(columns=['xc_centroid', 'yc_centroid', 'ellipticity_asymmetry',
                             'ellipticity_centroid', 'elongation_asymmetry', 'elongation_centroid',
                             'orientation_centroid', 'xc_asymmetry', 'yc_asymmetry',

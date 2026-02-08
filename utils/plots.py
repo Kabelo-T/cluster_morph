@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
 from matplotlib.colors import LogNorm
+from cycler import cycler
 import seaborn as sns
 
 import utils.file as futils
@@ -28,11 +29,11 @@ colors = [
     '#E69F00'       # Orange
 ]
 
-plt.rc('axes', prop_cycle=plt.cycler('color', colors))
+plt.rc('axes', prop_cycle=cycler('color', colors))
 
 
-def display_img(image: np.array, axs, segmap: np.array = None,
-                mask: np.array = None, vmin=None, vmax=None, **kwargs):
+def display_img(image: np.ndarray, axs, segmap: np.ndarray,
+                mask: np.ndarray, vmin=None, vmax=None, **kwargs):
     """Display an image, masked or unmasked. May plot alongside segmentation map
 
     Parameters
@@ -85,8 +86,8 @@ def plot_light(object, zoomed_region, zoom_size):
     return
 
 
-def plot_corr_matrix(corr_matrix: pd.DataFrame, title: str, save: bool = False,
-                     fname: str = None, show_cbar: bool = False,
+def plot_corr_matrix(corr_matrix: pd.DataFrame, title: str, fname: str,
+                     save: bool = False, show_cbar: bool = False,
                      annot_size: int = 20, **kwargs):
     """Plot the Correlation Matrix as a heatmap
 
@@ -165,7 +166,7 @@ def plot_joint_dist(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
             plt.show()
 
 
-def plot_mah(indx: int, axs: plt.Axes, am=False, highlight=False,
+def plot_mah(indx: int, axs, am=False, highlight=False,
              mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/',
              show_relaxed: bool = False, show_disturbed: bool = False) -> None:
 
@@ -227,10 +228,12 @@ def plot_corrs(data_dict: dict, params: list[str], labels: list[str], time: np.n
     axs.set_xlabel(time_label)
 
     if sm:
-        axs.set_ylabel(rf'$|\rho_{{\mathrm{sp}}} (SM_{{a=0.94}}, {t})|$')
+        axs.set_ylabel(
+            r'$|\rho_{\mathrm{sp}} (SM_{a=0.94}, ' + t + r')|$')
         ylim = (0., 0.7)
     else:
-        axs.set_ylabel(rf'$|\rho_{{\mathrm{sp}}} (DS_{{a=1}}, {t})|$')
+        axs.set_ylabel(
+            r'$|\rho_{\mathrm{sp}} (DS_{a=1}, ' + t + r')|$')
         ylim = (0., 0.8)
 
     for i, param in enumerate(params):

@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from scipy.stats import spearmanr
 
 import utils.data as datutils
 
@@ -22,31 +23,34 @@ def weight_split(weights, x):
     return wsum_ds, abs_wsum_ds, sq_wsum_ds, inds
 
 
-def build_rho(time: np.ndarray, df: pd.DataFrame, param_dict) -> np.ndarray:
+def build_rho(df: pd.DataFrame, mah) -> np.ndarray:
     """Build spearman correlation matrix between parameters and mass accretion history, at each time step
 
     Parameters
     ----------
-    time : np.ndarray
-        mass accretion history ma or am
     df : pd.DataFrame
        ds or sm parameters
-    param_dict : dict
-        dictionary of cluster parameters where keys are time steps, values are dataframes of parameters
-
+    mah : np.ndarray
+        mass accretion history array, ma or am
 
     Returns
     -------
     np.ndarray
         Spearman correlation matrix
     """
-    rho = np.zeros((np.shape(time)[0], np.shape(df)[1]))
+    n_times = np.shape(mah)[1]
+    n_features = np.shape(df)[1]
+    rho = np.zeros((n_times, n_features))
     r = 1000
-    for i, param in enumerate(df.columns):
-        p50 = datutils.get_perc(
-            param_dict, param=param, q=50, history='M/M0')
-        rho[:, i] = p50
-
+    df_r = df.reset_index(drop=True)
+    for i in range(n_times):
+        mm0 = pd.Series(mah[:, i])
+        df0 = pd.concat([mm0, df_r], axis=1)
+        for _ in range(r):
+            bootdf = df0.sample(n=len(df0), replace=True)
+            sp, _ = spearmanr(bootdf)
+            w = sp[1:, 0]/r
+            rho[i, :] += w
     return rho
 
 
