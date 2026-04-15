@@ -8,8 +8,8 @@ from scipy.interpolate import interp1d, PchipInterpolator
 
 
 def bootstrap(combined_df: pd.DataFrame,
-              sample_size: int = None,  
-              seed: list | int = None, history: str = 'M/M0') -> list[pd.Series]:   
+              sample_size: int = None,
+              seed: list | int = None, history: str = 'M/M0') -> list[pd.Series]:
     """Bootstrap the spearman correlation coefficients for the mass accretion 
     histories and the dynamical state parameters (aexp = 1)
 
@@ -104,7 +104,7 @@ def real2pix(r: u.Quantity, map: np.ndarray) -> int:
     return radius
 
 
-def interp_ma(df_dict: dict[pd.DataFrame, int], num_scales: int = 100) -> tuple[np.ndarray, np.ndarray]:
+def interp_ma(df_dict: dict[pd.DataFrame, int], num_scales: int = 100) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Interpolate the mass accretion histories to a common set of aexp values.
 
     Parameters
@@ -126,16 +126,22 @@ def interp_ma(df_dict: dict[pd.DataFrame, int], num_scales: int = 100) -> tuple[
     common_aexp = np.linspace(min_a, 1., num_scales)
 
     mah = np.full(shape=(len(df_dict), num_scales),
-                  fill_value=np.nan)
+                  fill_value=0.)
+    masses = np.full(shape=(len(df_dict), num_scales),
+                     fill_value=0.)
 
     for i, df in enumerate(df_dict.values()):
         a = df['aexp'].values
         m = df['M/M0'].values
+        mass = df['mass'].values
         # interp_func = make_interp_spline(a, m, k=3)
         interp_func = PchipInterpolator(a, m)
-
         mah[i] = interp_func(common_aexp)
-    return mah, common_aexp
+
+        interp_func = PchipInterpolator(a, mass)
+        masses[i] = interp_func(common_aexp)
+
+    return mah, masses, common_aexp
 
 
 def ma_zbin(redshift: float, mah_dict: dict[pd.DataFrame]) -> pd.DataFrame:
@@ -150,10 +156,10 @@ def ma_zbin(redshift: float, mah_dict: dict[pd.DataFrame]) -> pd.DataFrame:
     -------
     pd.DataFrame
     """
-    mah_df = pd.DataFrame(columns=['ID', 'M/M0'])
+    mah_df = pd.DataFrame(columns=['ID', 'M/M0', 'mass'])
     for region in mah_dict.keys():
         row = mah_dict[region].loc[mah_dict[region]
-                                   ['Redshift'] == redshift, ['M/M0']]
+                                   ['Redshift'] == redshift, ['M/M0', 'mass']]
         row['ID'] = region
         if not row.empty:
             mah_df = pd.concat([mah_df, row], ignore_index=True)

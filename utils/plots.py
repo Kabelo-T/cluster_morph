@@ -267,3 +267,15 @@ def plot_corrs(data_dict: dict, params: list[str], labels: list[str], time: np.n
     axs.set_ylim(ylim)
     axs.grid()
     axs.legend()
+
+
+def plot_dynamical_time(axs, xlim, xticks, scales, lookback_time):
+    for ax in axs.ravel():
+        ax2 = ax.twiny()
+        ax2.set_xlim(xlim)
+        idx = np.searchsorted(scales, xticks)
+        tlabels = [f'{lookback_time[i]:.1f}' for i in idx]
+        ax2.set_xticks(xticks)
+        ax2.set_xticklabels(tlabels)
+        ax2.set_xlabel(
+            r'$\Delta t / t_{\mathrm{dyn}}$', fontsize=14, labelpad=10)

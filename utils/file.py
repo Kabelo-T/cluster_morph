@@ -173,8 +173,9 @@ def get_mah(file: str) -> pd.DataFrame:
         mpeak = np.max(masses[:i+1])
         norm_masses.append(mpeak/mpeak_a1)
 
-    ma = pd.DataFrame(columns=['aexp', 'M/M0', 'redshift'])
-    ma['M/M0'] = norm_masses[::-1]
+    ma = pd.DataFrame(columns=['aexp', 'mass', 'M/M0', 'redshift'])
+    ma['mass'] = masses
+    ma['M/M0'] = norm_masses
     ma['Redshift'] = mah_df['Redshift(0)']
     ma['aexp'] = 1 / (1+ma['Redshift'])
     ma.sort_values(by='aexp', inplace=True)
@@ -182,7 +183,7 @@ def get_mah(file: str) -> pd.DataFrame:
     return ma
 
 
-def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/') -> dict:
+def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/', return_masses: bool = False) -> dict:
     df_dict = {}
     for f in sorted(os.listdir(mah_dir)):
         file = mah_dir + f
@@ -191,12 +192,14 @@ def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/') -> dict:
         idx = find_id(file)
         df_dict[idx] = ma
 
-    mah, common_aexp = datutils.interp_ma(df_dict)
+    mah, masses, common_aexp = datutils.interp_ma(df_dict)
+
     mah_df_dict = {}
     for i, key in enumerate(df_dict.keys()):
-        df = pd.DataFrame(columns=['M/M0', 'Redshift', 'aexp'])
+        df = pd.DataFrame(columns=['M/M0', 'mass', 'Redshift', 'aexp'])
         df['M/M0'] = mah[i]
         df['aexp'] = common_aexp
+        df['mass'] = masses[i]
         df['Redshift'] = (1/df['aexp']) - 1
         mah_df_dict[key] = df
 

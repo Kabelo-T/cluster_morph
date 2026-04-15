@@ -97,7 +97,7 @@ def calc_score(time: np.ndarray, target: float, wsum: np.ndarray) -> tuple[np.nd
     return wsum[:, indx], indx
 
 
-def split_mah(mah_dict: dict, scores: np.ndarray):
+def split_mah(mah_dict: dict, scores: np.ndarray, verbose=False):
     """Split mass accretion history into lower and upper percentiles.
 
     Parameters
@@ -111,21 +111,43 @@ def split_mah(mah_dict: dict, scores: np.ndarray):
     split_25p = scores < s25
     split_75p = scores > s75
     split_50p = scores == s50
+    split_u50p = scores > s50
+    split_l50p = scores < s50
     mah_25 = []
     mah_75 = []
     mah_50 = []
+    mah_u50 = []
+    mah_l50 = []
 
     for i, (k, madf) in enumerate(mah_dict.items()):
         if split_25p[i]:
+            if verbose:
+                print(f'{k} in lower 25%')
             mah_25.append(madf['M/M0'].values)
         elif split_75p[i]:
+            if verbose:
+                print(f'{k} in upper 25%')
             mah_75.append(madf['M/M0'].values)
         elif split_50p[i]:
+            if verbose:
+                print(f'{k} in 50%')
             mah_50.append(madf['M/M0'].values)
+
+    for i, (k, madf) in enumerate(mah_dict.items()):
+        if split_u50p[i]:
+            if verbose:
+                print(f'{k} in upper 50%')
+            mah_u50.append(madf['M/M0'].values)
+        elif split_l50p[i]:
+            if verbose:
+                print(f'{k} in lower 50%')
+            mah_l50.append(madf['M/M0'].values)
 
     mah_25 = np.array(mah_25)  # shape: (N25, Na)
     mah_75 = np.array(mah_75)  # shape: (N75, Na)
     mah_50 = np.array(mah_50)  # shape: (1, Na)
+    mah_u50 = np.array(mah_u50)  # shape: (N, Na)
+    mah_l50 = np.array(mah_l50)  # shape: (N, Na)
 
     # Lower 25%
     p50_25 = np.median(mah_25, axis=0)
@@ -137,4 +159,7 @@ def split_mah(mah_dict: dict, scores: np.ndarray):
     p16_75 = np.percentile(mah_75, 16, axis=0, method='linear')
     p84_75 = np.percentile(mah_75, 84, axis=0, method='linear')
 
-    return mah_25, mah_50, mah_75, (p16_25, p50_25, p84_25), (p16_75, p50_75, p84_75)
+    if verbose:
+        print(split_25p, '\n----------------\n', split_75p)
+
+    return mah_25, mah_50, mah_75, (p16_25, p50_25, p84_25), (p16_75, p50_75, p84_75), mah_u50, mah_l50
