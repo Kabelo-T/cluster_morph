@@ -75,6 +75,23 @@ def get_perc(df_dict: dict, param: str, q: int, history: str = 'M/M0') -> list:
 
 
 def get_percs(df_dict: dict, param: str, history: str = 'M/M0') -> tuple:
+    """Compute percentile curves for a dynamical/morphological parameter across times.
+
+    Parameters
+    ----------
+    df_dict : dict
+        Mapping from time/redshift to DataFrame of bootstrap samples.
+    param : str
+        Column name of the dynamical/morphological parameter to evaluate (e.g. 's', 'x_off').
+    history : str, optional
+        Column name for the mass history series in bootstrap samples (default 'M/M0', can be 'am').
+
+    Returns
+    -------
+    tuple[list[float], list[float], list[float], list[float], list[float]]
+        5-tuple containing the 10th, 25th, 50th, 75th and 90th percentile curves
+        evaluated at each time in df_dict.
+    """
     p10 = get_perc(df_dict, param=param, q=10, history=history)
     p25 = get_perc(df_dict, param=param, q=25, history=history)
     p50 = get_perc(df_dict, param=param, q=50, history=history)
@@ -110,15 +127,15 @@ def interp_ma(df_dict: dict[pd.DataFrame, int], num_scales: int = 100) -> tuple[
     Parameters
     ----------
     df_dict : dict[int, pd.DataFrame]
-        dictionary of each region's mass accretion history
+        dictionary mapping of cluster id to each region's mass accretion history
     num_scales : int, optional
         number of common aexp values, by default 100.
         105 is the median, 103 is the mean, 100 is in multiCAM
 
     Returns
     -------
-    tuple[np.ndarray, np.ndarray]
-        Mass accretion histories and common aexp values
+    tuple[np.ndarray, np.ndarray, np.ndarray]
+        Mass accretion histories, virial masses and common aexp values
     """
     redshifts = unique_redshifts(df_dict)
     aexp = 1/(1+np.array(redshifts))
@@ -151,10 +168,12 @@ def ma_zbin(redshift: float, mah_dict: dict[pd.DataFrame]) -> pd.DataFrame:
     ----------
     redshift : float
     mah_dict : dict[pd.DataFrame]
+        Mapping of region ID to mass accretion history DataFrame
 
     Returns
     -------
     pd.DataFrame
+            DataFrame containing 'ID', 'M/M0', and 'mass' for all regions at the specified redshift
     """
     mah_df = pd.DataFrame(columns=['ID', 'M/M0', 'mass'])
     for region in mah_dict.keys():
@@ -173,10 +192,12 @@ def am_mbin(mass: float, mah_dict: dict[pd.DataFrame]) -> pd.DataFrame:
     ----------
     mass : float
     mah_dict : dict[pd.DataFrame]
+            Mapping of region ID to mass accretion history DataFrame
 
     Returns
     -------
     pd.DataFrame
+            DataFrame containing 'ID' and 'aexp' for all regions at the specified mass fraction
     """
     mah_df = pd.DataFrame(columns=['ID', 'aexp'])
     for region in mah_dict.keys():
@@ -195,10 +216,12 @@ def ahf_zbin(redshift: float, ahf_dict: dict[pd.DataFrame]) -> pd.DataFrame:
     ----------
     redshift : float
     ahf_dict : dict[pd.DataFrame]
+            Mapping of region ID to AHF halo catalog DataFrame
 
     Returns
     -------
     pd.DataFrame
+            DataFrame containing 'ID' and all AHF parameters for all regions at the specified redshift
     """
     cols = [col for col in ahf_dict[1].columns]
     cols.insert(0, 'ID')
@@ -212,6 +235,18 @@ def ahf_zbin(redshift: float, ahf_dict: dict[pd.DataFrame]) -> pd.DataFrame:
 
 
 def unique_redshifts(mah_df_dict: dict[pd.DataFrame]) -> list:
+    """Return sorted unique redshift values present in a dictionary of mah DataFrames.
+
+    Parameters
+    ----------
+    mah_df_dict : dict
+        Mapping from region ID to a mah dataframe
+
+    Returns
+    -------
+    list[float]
+        Sorted list of unique redshift values across all provided DataFrames.
+    """
     zs = [x['Redshift'].to_list() for x in mah_df_dict.values()]
     redshifts = []
     for z in zs:
@@ -223,6 +258,18 @@ def unique_redshifts(mah_df_dict: dict[pd.DataFrame]) -> list:
 
 
 def unique_masses(mah_df_dict: dict[pd.DataFrame]) -> list:
+    """Return sorted unique mass-fraction values present in a dictionary of MAH DataFrames.
+
+    Parameters
+    ----------
+    mah_df_dict : dict
+        Mapping from region ID to mah dataframe
+
+    Returns
+    -------
+    list[float]
+        Sorted list of unique mass fraction values across all provided DataFrames.
+    """
     ms = [x['M/M0'].to_list() for x in mah_df_dict.values()]
     masses = []
     for m in ms:
@@ -264,7 +311,7 @@ def get_am(ma, scales, min_mass_bin, n_bins=100, log_spacing=True):
     if log_spacing:
         mass_bins = np.linspace(np.log(min_mass_bin), np.log(1.0), n_bins)
     else:
-        mass_bins = np.log(np.linspace(min_mass_bin, 1.0, n_bins))
+        mass_bins = np.linspace(min_mass_bin, 1.0, n_bins)
 
     # 3.
     # NOTE: Make function monotonic. We assume start is early -> late ordering.
@@ -303,6 +350,26 @@ def get_am(ma, scales, min_mass_bin, n_bins=100, log_spacing=True):
 
 def prepare_ma_corrs(mah_dict: dict[int, pd.DataFrame],
                      df0: pd.DataFrame) -> tuple[dict, list]:
+    """Prepare merged DataFrames of mass-fraction values and dynamical parameters by redshift.
+
+    For each redshift present in `mah_dict` this function extracts the (M/M0, mass)
+    rows for all regions, merges them with `df0` on 'ID', and keeps only redshifts
+    that have at least 200 regions. The returned `params_dict` maps redshift -> DataFrame.
+
+    Parameters
+    ----------
+    mah_dict : dict[int, pd.DataFrame]
+        Mapping region ID -> MAH DataFrame containing columns ['ID','Redshift','M/M0','mass', ...].
+    df0 : pd.DataFrame
+        DataFrame of dynamical/morphological parameters keyed by 'ID'.
+
+    Returns
+    -------
+    params_dict : dict
+        Mapping redshift -> merged DataFrame (index 'ID') for redshifts with >= 200 matched regions.
+    filtered_z : list
+        List of redshifts that passed the object-count threshold and were kept in params_dict.
+    """
     filtered_z = []
     params_dict = {}
     redshifts = unique_redshifts(mah_dict)
@@ -319,6 +386,23 @@ def prepare_ma_corrs(mah_dict: dict[int, pd.DataFrame],
 
 
 def prepare_am_corrs(am: np.ndarray, masses: np.ndarray, df0: pd.DataFrame) -> dict:
+    """Build a dictionary mapping mass bin -> DataFrame combining a(m) values with parameters.
+
+    Parameters
+    ----------
+    am : np.ndarray
+        Array of shape (n_regions, n_mass_bins) containing a(m) values.
+    masses : np.ndarray
+        1D array of mass bin values corresponding to the columns of `am`.
+    df0 : pd.DataFrame
+        DataFrame of dynamical/morphological parameters (should include an 'ID' column).
+
+    Returns
+    -------
+    dict
+        Mapping mass_bin_value -> DataFrame where the first column is 'am' (a(m) for each region)
+        and the remaining columns are the columns of `df0` (with 'ID' dropped).
+    """
     params_dict = {}
     mah_df = pd.DataFrame()
     df0 = df0.reset_index()
