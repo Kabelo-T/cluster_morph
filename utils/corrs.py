@@ -2,6 +2,7 @@ from multicam.multicam import MultiCAM  # type: ignore
 from multicam.train import get_tt_indices  # type: ignore
 from scipy.stats import spearmanr
 import numpy as np
+from sklearn.model_selection import train_test_split
 
 
 def build_mcam_corrs(spearm_corr: np.ndarray):
@@ -37,6 +38,7 @@ def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0) -> tuple:
     n_targets = y.shape[1]
     n_features = x.shape[1]
     n_regions = x.shape[0]
+    halo_idx = np.arange(n_regions)
 
     sp_corr = []
     weights = np.zeros((n_targets, n_features))
@@ -46,9 +48,8 @@ def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0) -> tuple:
     r2 = np.zeros(n_targets)
 
     for seed in range(r):
-        rng = np.random.default_rng(seed)
-        train_idx, test_idx = get_tt_indices(
-            n_points=n_regions, rng=rng, test_ratio=0.25
+        train_idx, test_idx = train_test_split(
+            halo_idx, test_size=0.25, random_state=seed
         )
 
         x_train = x[train_idx]
