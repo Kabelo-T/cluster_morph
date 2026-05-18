@@ -271,7 +271,7 @@ def get_virial_radius(idx: int = None, file: str = None) -> tuple:
     return rvir, ovdens
 
 
-def get_morphologies(sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv', all=False) -> pd.DataFrame:
+def get_morph(halo_ids=None, sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv', all=False) -> pd.DataFrame:
     sm_df = pd.read_csv(sm_dir)
     sm_df.set_index('ID', inplace=True)
     sm_df.drop(columns=['flag', 'flag_sersic', 'flux_circ', 'flux_ellip',
@@ -285,7 +285,18 @@ def get_morphologies(sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv', a
                             'S(G, M20)', 'sersic_n', 'sersic_xc', 'sersic_yc',
                             'sersic_ellip', 'sersic_theta', 'sersic_chi2_dof',
                             'rhalf_ellip', 'M20', 'S', 'sersic_rhalf', 'Gini'], inplace=True)
-    return sm_df
+
+    if halo_ids is not None:
+        sm_df = sm_df.reindex(halo_ids)
+    return sm_df.reset_index(drop=True)
+
+
+def get_morphologies(halo_ids=None, f='rin50.0kpc_rout1.0Mpc_205.csv'):
+    sm_df_zx = get_morph(halo_ids, f'results/zx/{f}')
+    sm_df_xy = get_morph(halo_ids, f'results/xy/{f}')
+    sm_df_yz = get_morph(halo_ids, f'results/yz/{f}')
+
+    return pd.concat([sm_df_xy, sm_df_yz, sm_df_zx])
 
 
 def get_ds_theory_today(file_path: str = 'data/gadgetx3k/GadgetX-DS-theory-snap-128.txt'):
@@ -299,7 +310,7 @@ def get_ds_theory_today(file_path: str = 'data/gadgetx3k/GadgetX-DS-theory-snap-
     return ds_z0
 
 
-def get_ds(snap: int = 128, clean=True) -> pd.DataFrame:
+def get_ds(halo_ids=None, snap: int = 128, clean=True) -> pd.DataFrame:
     """Gets dynamical state dataframe for all 324 regions.
 
     Parameters
@@ -326,6 +337,9 @@ def get_ds(snap: int = 128, clean=True) -> pd.DataFrame:
 
     dsdf.rename(columns={'rID[0]': 'ID'}, inplace=True)
     dsdf.set_index('ID', inplace=True)
+    if halo_ids is not None:
+        dsdf = dsdf.loc[halo_ids]
+
     return dsdf
 
 
@@ -339,13 +353,10 @@ def get_ds_all():
     return df_dict
 
 
-def get_m14(file_path: str = 'data/gadgetx3k/mag_diff_GadgetX_3k.csv') -> pd.DataFrame:
+def get_m14(halo_ids=None, file_path: str = 'data/gadgetx3k/mag_diff_GadgetX_3k.csv') -> pd.DataFrame:
     m14 = pd.read_csv(file_path)
     m14.set_index('ID', inplace=True)
-
-    # # cutoffs as per Casas+24 https://iopscience.iop.org/article/10.3847/1538-4357/ad41de
-    # m14 = m14[m14['3d'] > 1.25]
-    # m14 = m14[m14['proj_x'] > 1.25]
-    # m14 = m14[m14['proj_y'] > 1.25]
-    # m14 = m14[m14['proj_z'] > 1.25]
+    if halo_ids is not None:
+        m14 = m14.loc[halo_ids]
+    # m14.reset_index(inplace=True)
     return m14

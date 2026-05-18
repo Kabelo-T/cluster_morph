@@ -23,7 +23,7 @@ def build_mcam_corrs(spearm_corr: np.ndarray):
     return p25, p50, p75
 
 
-def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0) -> tuple:
+def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0, proj=False) -> tuple:
     """Calculate the Spearman correlation, RMSE, and R^2 between predicted and true values
 
     Parameters
@@ -34,16 +34,23 @@ def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0) -> tuple:
         targets
     alpha : float, optional
         regularization strength for Ridge regression in MultiCAM, by default 0.0
+    proj : bool, optional
+        if using projected features/targets need to handle projection leakage in train-test split, default False
     """
     n_targets = y.shape[1]
     n_features = x.shape[1]
-    n_regions = x.shape[0]
-    halo_idx = np.arange(n_regions)
+
+    if proj:
+        n_halos = x.shape[0] // 3
+    else:
+        n_halos = x.shape[0]
+
+    halo_idx = np.arange(n_halos)
 
     sp_corr = []
     weights = np.zeros((n_targets, n_features))
 
-    r = 1000
+    r = 100
     rmse = np.zeros(n_targets)
     r2 = np.zeros(n_targets)
 
@@ -51,6 +58,13 @@ def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0) -> tuple:
         train_idx, test_idx = train_test_split(
             halo_idx, test_size=0.25, random_state=seed
         )
+
+        if proj:
+            train_idx = np.concatenate(
+                [train_idx, train_idx + n_halos, train_idx + 2*n_halos])
+
+            test_idx = np.concatenate(
+                [test_idx,  test_idx + n_halos, test_idx + 2*n_halos])
 
         x_train = x[train_idx]
         x_test = x[test_idx]

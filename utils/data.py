@@ -280,7 +280,7 @@ def unique_masses(mah_df_dict: dict[pd.DataFrame]) -> list:
     return masses
 
 
-def get_am(ma, scales, min_mass_bin, n_bins=100, log_spacing=True):
+def build_am(ma, scales, min_mass_bin, n_bins=100, log_spacing=True, ):
     """
     1. Inversion is only a well-defined process for monotonic functions, and m(a) for an
     individual halo isn't necessarily monotonic. To solve this, the standard redefinition of a(m0)
@@ -345,6 +345,12 @@ def get_am(ma, scales, min_mass_bin, n_bins=100, log_spacing=True):
 
     # 6.
     am = np.array([np.exp(f(mass_bins)) for f in fs])
+
+    # for nans in am, want to use previous value
+    # but if first value is nan, set to 0 and propagate till we get a number
+    am[:, 0] = np.nan_to_num(am[:, 0], nan=0.0)
+    am = np.fmax.accumulate(am, axis=1)
+
     return am, np.exp(mass_bins)
 
 
@@ -405,7 +411,7 @@ def prepare_am_corrs(am: np.ndarray, masses: np.ndarray, df0: pd.DataFrame) -> d
     """
     params_dict = {}
     mah_df = pd.DataFrame()
-    df0 = df0.reset_index()
+    df0 = df0.reset_index(drop=True)  # ensure 'ID' is a column, not index
     df0.drop(columns=['ID'], inplace=True)
     for i, m in enumerate(masses):
         mah_df = pd.DataFrame({'am': am[:, i]})

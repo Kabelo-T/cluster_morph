@@ -98,7 +98,7 @@ def calc_score(time: np.ndarray, target: float, wsum: np.ndarray) -> tuple[np.nd
 
 
 def split_mah(mah_dict: dict, scores: np.ndarray, verbose=False):
-    """Split mass accretion history into lower and upper percentiles.
+    """Split mass accretion history into lower and upper percentiles. This function is better for the plotting.
 
     Parameters
     ----------
@@ -163,3 +163,49 @@ def split_mah(mah_dict: dict, scores: np.ndarray, verbose=False):
         print(split_25p, '\n----------------\n', split_75p)
 
     return mah_25, mah_50, mah_75, (p16_25, p50_25, p84_25), (p16_75, p50_75, p84_75), mah_u50, mah_l50
+
+
+def split_mah_idx(mah_dict: dict, scores: np.ndarray, verbose=False):
+    """Split mass accretion history into lower and upper percentiles and return halo IDs.
+
+    Parameters
+    ----------
+    mah_dict : dict
+        dictionary of mass accretion histories where keys are halo IDs and values are dataframes
+    scores : np.ndarray
+        array of scores for each halo
+    """
+    s25, s50, s75 = np.percentile(scores, [25, 50, 75])
+    split_25p = scores < s25
+    split_75p = scores > s75
+    split_50p = scores == s50
+    split_u50p = scores > s50
+    split_l50p = scores < s50
+
+    split_dict = {"lower_25": [], "upper_25": [],
+                  "median": [], "upper_50": [], "lower_50": []}
+
+    for i, (k, madf) in enumerate(mah_dict.items()):
+        if split_25p[i]:
+            if verbose:
+                print(f'{k} in lower 25%')
+            split_dict["lower_25"].append(k)
+        elif split_75p[i]:
+            if verbose:
+                print(f'{k} in upper 25%')
+            split_dict["upper_25"].append(k)
+
+        if split_50p[i]:
+            if verbose:
+                print(f'{k} is median')
+            split_dict["median"].append(k)
+        elif split_u50p[i]:
+            if verbose:
+                print(f'{k} in upper 50%')
+            split_dict["upper_50"].append(k)
+        elif split_l50p[i]:
+            if verbose:
+                print(f'{k} in lower 50%')
+            split_dict["lower_50"].append(k)
+
+    return split_dict
