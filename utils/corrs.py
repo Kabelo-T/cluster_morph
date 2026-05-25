@@ -53,7 +53,7 @@ def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0, proj=False) -> t
     r = 100
     rmse = np.zeros(n_targets)
     r2 = np.zeros(n_targets)
-
+    # Monte carlo cross validation loop for train-test splits and model fitting
     for seed in range(r):
         train_idx, test_idx = train_test_split(
             halo_idx, test_size=0.25, random_state=seed
