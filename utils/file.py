@@ -5,7 +5,7 @@ import numpy as np
 from astropy.io import fits
 from astropy import units as u
 
-import utils.data as datutils
+from . import data as datutils
 
 
 def print_src_morphs(source_morphs, index=0):
@@ -238,6 +238,17 @@ def get_ahf_all(ahf_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> 
         df_dict[idx] = ahf
 
     return df_dict
+
+
+def get_virial_masses(halo_ids=None) -> np.ndarray:
+    ahf = get_ahf_all()
+
+    if halo_ids is None:    # then just use them all
+        halo_ids = list(ahf.keys())
+
+    mass = np.array([ahf[halo_id]['Mvir(4)'][ahf[halo_id]['Redshift(0)'] == 0].values[0]
+                    for halo_id in halo_ids])
+    return mass
 
 
 def get_virial_radius(idx: int = None, file: str = None) -> tuple:

@@ -3,6 +3,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 
 import utils.data as datutils
+from multicam.qt import qt_gauss_base, qt_inverse_gauss_base    # type: ignore
 
 
 def weight_split(weights, x):
@@ -54,13 +55,15 @@ def build_rho(df: pd.DataFrame, mah) -> np.ndarray:
     return rho
 
 
-def wsum(x, weights: np.ndarray) -> np.ndarray:
+def wsum(xng, model, weights: np.ndarray) -> np.ndarray:
     """Weighted sum of cluster parameters.
 
     Parameters
     ----------
-    x : np.ndarray or pd.DataFrame
-        ds or sm parameters
+    xng : np.ndarray or pd.DataFrame
+        ds or sm parameters, not yet quantile transformed
+    model : MultiCAM model
+        model fitted on training data, used to gaussianize the features + predicted ma and invert it back to data space
     weights : np.ndarray
         multicam training weights or spearman correlation coefficients
 
@@ -69,11 +72,19 @@ def wsum(x, weights: np.ndarray) -> np.ndarray:
     np.ndarray
         scores for each halo as a function of time
     """
-    if isinstance(x, pd.DataFrame):
-        x = x.to_numpy()
+    if isinstance(xng, pd.DataFrame):
+        xng = xng.to_numpy()
 
-    wsum = x.dot(weights.T)    # (n_halos, n_times)
-    return wsum
+    # quantile transform x based on training data
+    xg = qt_gauss_base(xng, model.x_train)
+    mang = xg.dot(weights.T)    # (n_halos, n_times)
+
+    # gaussianize the predicted ma non-gaussian using the predictions on train data. will be from last monte carlo iteration, should be fine since we are just using it for ranking predictions, not for actual values.
+    mag = qt_gauss_base(mang, model.y_not_gauss_train)
+
+    # invert ma_gauss to data space based on gaussianized y_train.
+    ma = qt_inverse_gauss_base(mag, model.y_train)
+    return ma
 
 
 def calc_score(time: np.ndarray, target: float, wsum: np.ndarray) -> tuple[np.ndarray, int]:

@@ -1,5 +1,6 @@
 from multicam.multicam import MultiCAM  # type: ignore
 from multicam.train import get_tt_indices  # type: ignore
+from multicam.qt import qt_gauss_base, qt_inverse_gauss_base  # type: ignore
 from scipy.stats import spearmanr
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -23,7 +24,7 @@ def build_mcam_corrs(spearm_corr: np.ndarray):
     return p25, p50, p75
 
 
-def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0, proj=False) -> tuple:
+def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0, proj=False, scoring=False) -> tuple:
     """Calculate the Spearman correlation, RMSE, and R^2 between predicted and true values
 
     Parameters
@@ -76,7 +77,6 @@ def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0, proj=False) -> t
 
         coeff = mv_model.reg.coef_
         weights += coeff / r
-
         y_pred = mv_model.predict(x_test)
 
         sp_corr.append([
@@ -98,4 +98,56 @@ def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0, proj=False) -> t
     sp_corr = np.array(sp_corr)
     p25, p50, p75 = build_mcam_corrs(sp_corr)
 
-    return sp_corr, p25, p50, p75, weights, rmse, r2
+    if scoring:
+        # if trying to rank order mah, need to return the last model to get the predicted values for the test set to calculate the scores
+        return sp_corr, p25, p50, p75, weights, rmse, r2, mv_model
+    else:
+        return sp_corr, p25, p50, p75, weights, rmse, r2
+
+
+def main():
+    from . import data as datutils
+    from . import file as futils
+
+    mah_dict = futils.get_mah_all()
+    ma, _, aexp_bins = datutils.interp_ma(mah_dict)
+    am, mass_bins = datutils.build_am(ma=ma, scales=aexp_bins,
+                                      min_mass_bin=0.01, log_spacing=True)
+
+    stacked_ma = np.vstack([ma]*3)  # because we have 3 projections
+    stacked_am = np.vstack([am]*3)  # because we have 3 projections
+
+    halo_ids = np.array([int(k) for k in mah_dict.keys()])
+    m14 = futils.get_m14(halo_ids)
+    m14_stacked = np.hstack([m14['proj_x'], m14['proj_y'], m14['proj_z']])
+
+    dsdf = futils.get_ds(halo_ids)
+    dsdf.drop(columns=['eta_500[8]', 'delta_500[9]',
+                       'fm_500[10]', 'fm2_500[11]'], inplace=True)
+    dsdf = dsdf.join(m14['3d'])
+
+    smdf = futils.get_morphologies(halo_ids)
+    inner_df = futils.get_morphologies(halo_ids, 'r_0.03Mpc_205.csv')
+    iconc = inner_df['C']
+    iconc.name = 'core_C'
+
+    mass = futils.get_virial_masses(halo_ids)
+
+    logmass = np.log10(mass)
+    logmass_stacked = np.hstack([logmass]*3)  # because we have 3 projections
+
+    n_halos = len(am)
+    assert m14_stacked.shape[0] == 3 * n_halos
+    assert stacked_am.shape[0] == 3 * n_halos
+    assert stacked_ma.shape[0] == 3 * n_halos
+    assert smdf.shape[0] == 3 * n_halos
+    assert iconc.shape[0] == 3 * n_halos
+
+    x = np.vstack([dsdf['eta_200[3]'], dsdf['delta_200[4]'],
+                  dsdf['fm_200[5]'], dsdf['fm2_200[6]'], dsdf['3d']]).T
+    y = ma
+    _, ap25, ap50, ap75, _, _, _ = multicorr(x, y, proj=False)
+
+
+if __name__ == "__main__":
+    main()
