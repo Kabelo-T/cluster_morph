@@ -55,17 +55,17 @@ def build_rho(df: pd.DataFrame, mah) -> np.ndarray:
     return rho
 
 
-def wsum(xng, model, weights: np.ndarray) -> np.ndarray:
+def wsum(xng, weights: np.ndarray, model=None) -> np.ndarray:
     """Weighted sum of cluster parameters.
 
     Parameters
     ----------
     xng : np.ndarray or pd.DataFrame
         ds or sm parameters, not yet quantile transformed
-    model : MultiCAM model
-        model fitted on training data, used to gaussianize the features + predicted ma and invert it back to data space
     weights : np.ndarray
         multicam training weights or spearman correlation coefficients
+    model : MultiCAM model
+        model fitted on training data, used to gaussianize the features + predicted ma and invert it back to data space
 
     Returns
     -------
@@ -75,11 +75,17 @@ def wsum(xng, model, weights: np.ndarray) -> np.ndarray:
     if isinstance(xng, pd.DataFrame):
         xng = xng.to_numpy()
 
+    if model is None:
+        return xng.dot(weights.T)    # (n_halos, n_times)
+
     # quantile transform x based on training data
     xg = qt_gauss_base(xng, model.x_train)
     mang = xg.dot(weights.T)    # (n_halos, n_times)
 
-    # gaussianize the predicted ma non-gaussian using the predictions on train data. will be from last monte carlo iteration, should be fine since we are just using it for ranking predictions, not for actual values.
+    # gaussianize the predicted ma non-gaussian using the train data quantiles.
+    # will be from last monte carlo iteration
+    # should be fine since we are just using it for ranking predictions,
+    # not for actual values.
     mag = qt_gauss_base(mang, model.y_not_gauss_train)
 
     # invert ma_gauss to data space based on gaussianized y_train.
@@ -87,7 +93,8 @@ def wsum(xng, model, weights: np.ndarray) -> np.ndarray:
     return ma
 
 
-def calc_score(time: np.ndarray, target: float, wsum: np.ndarray) -> tuple[np.ndarray, int]:
+def calc_score(time: np.ndarray, target: float,
+               wsum: np.ndarray) -> tuple[np.ndarray, int]:
     """Find index of closest time step to target time and return scores at that time.
 
     Parameters
