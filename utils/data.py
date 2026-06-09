@@ -385,6 +385,14 @@ def prepare_ma_corrs(mah_dict: dict[int, pd.DataFrame],
             continue
         mah_df.set_index('ID', inplace=True)
         filtered_z.append(z)
+        if 'ID' not in df0.columns:
+            if df0.index.name is not None and df0.index.name.lower() in ('id', 'halo', 'halo_id'):
+                # keep the index as a column for merging
+                df0 = df0.reset_index()
+            # else:
+            #     # generic fallback: reset index and name the new column 'ID'
+            #     df0 = df0.reset_index().rename(columns={'index': 'ID'})
+
         df = mah_df.merge(df0, on='ID', how='inner')
         params_dict[z] = df
 
@@ -411,8 +419,10 @@ def prepare_am_corrs(am: np.ndarray, masses: np.ndarray, df0: pd.DataFrame) -> d
     """
     params_dict = {}
     mah_df = pd.DataFrame()
-    df0 = df0.reset_index(drop=True)  # ensure 'ID' is a column, not index
-    df0.drop(columns=['ID'], inplace=True)
+    df0 = df0.reset_index(drop=True)
+    if 'ID' in df0.columns:
+        df0 = df0.drop(columns=['ID'])
+
     for i, m in enumerate(masses):
         mah_df = pd.DataFrame({'am': am[:, i]})
         df = pd.concat([mah_df, df0], axis=1)

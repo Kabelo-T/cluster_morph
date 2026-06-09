@@ -24,7 +24,7 @@ def build_mcam_corrs(spearm_corr: np.ndarray):
     return p25, p50, p75
 
 
-def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 0.0, proj=False, scoring=False) -> tuple:
+def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 6.0, proj=False, scoring=False) -> tuple:
     """Calculate the Spearman correlation, RMSE, and R^2 between predicted and true values
 
     Parameters

@@ -3,7 +3,7 @@ import pandas as pd
 from scipy.stats import spearmanr
 
 import utils.data as datutils
-from multicam.qt import qt_gauss_base, qt_inverse_gauss_base    # type: ignore
+from multicam.qt import qt_gauss, qt_gauss_base, qt_inverse_gauss_base    # type: ignore
 
 
 def weight_split(weights, x):
@@ -76,7 +76,10 @@ def wsum(xng, weights: np.ndarray, model=None) -> np.ndarray:
         xng = xng.to_numpy()
 
     if model is None:
-        return xng.dot(weights.T)    # (n_halos, n_times)
+        xg = qt_gauss(xng, axis=0)  # gaussianize x
+        # normalize weights by sum of absolute values
+        weights = weights / np.sum(np.abs(weights), axis=1, keepdims=True)
+        return xg.dot(weights.T)    # (n_halos, n_times)
 
     # quantile transform x based on training data
     xg = qt_gauss_base(xng, model.x_train)
