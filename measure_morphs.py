@@ -79,9 +79,9 @@ def morph(map_dir, annulus=False, r1=1, r2=50, out_dir='.', use_vir=False):
 
             print(f"Done {file} ({processed}/{total})")
 
-            if len(morphs_list) % 20 == 0:
-                save_results(morphs_list, r1, r2, annulus,
-                             out_dir, use_vir=use_vir)
+#            if len(morphs_list) % 20 == 0:
+#                save_results(morphs_list, r1, r2, annulus,
+#                             out_dir, use_vir=use_vir)
 
     save_results(morphs_list, r1, r2, annulus, out_dir, use_vir=use_vir)
 

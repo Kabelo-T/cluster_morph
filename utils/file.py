@@ -282,7 +282,7 @@ def get_virial_radius(idx: int = None, file: str = None) -> tuple:
     return rvir, ovdens
 
 
-def get_morph(halo_ids=None, sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205.csv', all=False) -> pd.DataFrame:
+def get_morph(halo_ids=None, sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_305.csv', all=False) -> pd.DataFrame:
     sm_df = pd.read_csv(sm_dir)
     sm_df.set_index('ID', inplace=True)
     sm_df.drop(columns=['flag', 'flag_sersic', 'flux_circ', 'flux_ellip',
@@ -302,10 +302,10 @@ def get_morph(halo_ids=None, sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_205
     return sm_df.reset_index()
 
 
-def get_morphologies(halo_ids=None, f='rin50.0kpc_rout1.0Mpc_205.csv'):
-    sm_df_zx = get_morph(halo_ids, f'results/zx/{f}')
-    sm_df_xy = get_morph(halo_ids, f'results/xy/{f}')
-    sm_df_yz = get_morph(halo_ids, f'results/yz/{f}')
+def get_morphologies(halo_ids=None, f='rin50.0kpc_rout1.0Mpc_205.csv', all=False):
+    sm_df_zx = get_morph(halo_ids, f'results/zx/{f}', all=all)
+    sm_df_xy = get_morph(halo_ids, f'results/xy/{f}', all=all)
+    sm_df_yz = get_morph(halo_ids, f'results/yz/{f}', all=all)
     smdf = pd.concat([sm_df_xy, sm_df_yz, sm_df_zx])
     return smdf
 

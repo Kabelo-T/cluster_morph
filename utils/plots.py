@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -32,8 +33,8 @@ colors = [
 plt.rc('axes', prop_cycle=cycler('color', colors))
 
 
-def display_img(image: np.ndarray, axs, segmap: np.ndarray,
-                mask: np.ndarray, vmin=None, vmax=None, **kwargs):
+def display_img(image: np.ndarray, axs, segmap=None,
+                mask=None, vmin=None, vmax=None, **kwargs):
     """Display an image, masked or unmasked. May plot alongside segmentation map
 
     Parameters
@@ -176,7 +177,7 @@ def plot_mah(indx: int, axs, am=False, highlight=False,
     dsdf = futils.get_ds(snap=125, clean=False)
     mah_df_dict = futils.get_mah_all(mah_dir=mah_dir)
     ds = int(dsdf.loc[[indx]]['DS_200[2]'].values[0])
-    axs.set_title(f'ID {indx} | {state[ds]}')
+    axs.set_title(f'ID {indx}')
 
     if am:
         axs.set_xlabel('m = M/M(z=0)')
@@ -279,3 +280,7 @@ def plot_dynamical_time(axs, xlim, xticks, scales, lookback_time):
         ax2.set_xticklabels(tlabels)
         ax2.set_xlabel(
             r'$\Delta t / t_{\mathrm{dyn}}$', fontsize=14, labelpad=10)
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
