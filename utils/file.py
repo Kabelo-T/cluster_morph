@@ -135,9 +135,13 @@ def create_morph_df(source_morphs, name=None, save=False):
     return sources
 
 
-def load_map(file, map_dir):
-    if '.fits' in file:
-        map_file = map_dir + file
+def load_map(file, map_dir='/Users/kabelo/clusters/data/gadgetx3k/maps/zx/', id=None):
+
+    if id is not None:
+        map_file = f'/Users/kabelo/clusters/data/gadgetx3k/maps/zx/bcg_{id:04}_125_2.fits'
+    else:
+        if '.fits' in file:
+            map_file = map_dir + file
 
     try:
         map = fits.open(map_file)
@@ -302,7 +306,7 @@ def get_morph(halo_ids=None, sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_305
     return sm_df.reset_index()
 
 
-def get_morphologies(halo_ids=None, f='rin50.0kpc_rout1.0Mpc_205.csv', all=False):
+def get_morphologies(halo_ids=None, f='rin50.0kpc_rout1.0Mpc_305.csv', all=False):
     sm_df_zx = get_morph(halo_ids, f'results/zx/{f}', all=all)
     sm_df_xy = get_morph(halo_ids, f'results/xy/{f}', all=all)
     sm_df_yz = get_morph(halo_ids, f'results/yz/{f}', all=all)

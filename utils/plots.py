@@ -284,3 +284,10 @@ def plot_dynamical_time(axs, xlim, xticks, scales, lookback_time):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument('--display', action='store_true',
+                        help='display a map')
+    parser.add_argument('--id', type=int, default=1,
+                        help='region id')
+
+    args = parser.parse_args()
+    # if args.display:
