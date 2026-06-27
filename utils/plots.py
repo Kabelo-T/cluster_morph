@@ -169,7 +169,8 @@ def plot_joint_dist(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
 
 def plot_mah(indx: int, axs, am=False, highlight=False,
              mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/',
-             show_relaxed: bool = False, show_disturbed: bool = False) -> None:
+             show_relaxed: bool = False, show_disturbed: bool = False,
+             show_all: bool = False) -> None:
 
     state = {0: "Disturbed",
              1: "Relaxed"}
@@ -185,6 +186,9 @@ def plot_mah(indx: int, axs, am=False, highlight=False,
         for k, df in mah_df_dict.items():
             if k == indx:
                 axs.plot(df['M/M0'], df['aexp'], lw=5, color='red')
+            elif show_all:
+                axs.plot(df['M/M0'], df['aexp'],
+                         color='black', alpha=0.2, lw=1)
             else:
                 ds = int(dsdf.loc[[k]]['DS_200[2]'].values[0])
                 if (ds == 1 and show_relaxed) or (ds == 0 and show_disturbed):
@@ -197,6 +201,9 @@ def plot_mah(indx: int, axs, am=False, highlight=False,
         for k, df in mah_df_dict.items():
             if k == indx:
                 axs.plot(df['aexp'], df['M/M0'], lw=5, color='red')
+            elif show_all:
+                axs.plot(df['aexp'], df['M/M0'],
+                         color='black', alpha=0.2, lw=1)
             else:
                 ds = int(dsdf.loc[[k]]['DS_200[2]'].values[0])
                 if (ds == 1 and show_relaxed) or (ds == 0 and show_disturbed):
