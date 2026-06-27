@@ -303,7 +303,7 @@ def get_morph(halo_ids=None, sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_305
 
     if halo_ids is not None:
         sm_df = sm_df.reindex(halo_ids)
-    return sm_df.reset_index()
+    return sm_df
 
 
 def get_morphologies(halo_ids=None, f='rin50.0kpc_rout1.0Mpc_305.csv', all=False):
@@ -311,7 +311,7 @@ def get_morphologies(halo_ids=None, f='rin50.0kpc_rout1.0Mpc_305.csv', all=False
     sm_df_xy = get_morph(halo_ids, f'results/xy/{f}', all=all)
     sm_df_yz = get_morph(halo_ids, f'results/yz/{f}', all=all)
     smdf = pd.concat([sm_df_xy, sm_df_yz, sm_df_zx])
-    return smdf
+    return smdf.reset_index()
 
 
 def get_ds_theory_today(file_path: str = 'data/gadgetx3k/GadgetX-DS-theory-snap-128.txt'):
@@ -373,5 +373,4 @@ def get_m14(halo_ids=None, file_path: str = 'data/gadgetx3k/mag_diff_GadgetX_3k.
     m14.set_index('ID', inplace=True)
     if halo_ids is not None:
         m14 = m14.loc[halo_ids]
-    # m14.reset_index(inplace=True)
-    return m14.reset_index()
+    return m14
