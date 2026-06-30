@@ -187,10 +187,10 @@ def get_mah(file: str) -> pd.DataFrame:
     return ma
 
 
-def get_mah_all(mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/', return_masses: bool = False) -> dict:
+def get_mah_all(mah_dir: str = 'data/gadgetx3k/GadgetX', return_masses: bool = False) -> dict:
     df_dict = {}
     for f in sorted(os.listdir(mah_dir)):
-        file = mah_dir + f
+        file = os.path.join(mah_dir, f)
         # at this point m(a) is calculated for different snapshots so inhomogenous in aexp
         ma = get_mah(file)
         idx = find_id(file)
@@ -233,7 +233,7 @@ def get_ahf(file: str, clean=True) -> pd.DataFrame:
     return ahf_df
 
 
-def get_ahf_all(ahf_dir: str = 'data/gadgetx3k/AHFHaloHistory/', clean=True) -> dict:
+def get_ahf_all(ahf_dir: str = 'data/gadgetx3k/GadgetX/', clean=True) -> dict:
     df_dict = {}
     for f in sorted(os.listdir(ahf_dir)):
         file = ahf_dir + f

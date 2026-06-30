@@ -154,9 +154,11 @@ def interp_ma(df_dict: dict[pd.DataFrame, int], num_scales: int = 100) -> tuple[
         # interp_func = make_interp_spline(a, m, k=3)
         interp_func = PchipInterpolator(a, m)
         mah[i] = interp_func(common_aexp)
+        mah[i][common_aexp < a[0]] = 0.
 
         interp_func = PchipInterpolator(a, mass)
         masses[i] = interp_func(common_aexp)
+        masses[i][common_aexp < a[0]] = 0.
 
     return mah, masses, common_aexp
 
