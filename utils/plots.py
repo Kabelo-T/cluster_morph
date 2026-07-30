@@ -278,6 +278,60 @@ def plot_corrs(data_dict: dict, params: list[str], labels: list[str], time: np.n
     axs.legend()
 
 
+CURVE_COLORS = ['k', '#56B4E9', '#F0E442', '#009E73', '#E69F00', '#CC79A7']
+CURVE_FILL = [True, False, False, True, True, True]
+
+
+def calc_lbt(aexp):
+    redshifts = 1 / aexp - 1
+    lookback_time = Planck13.lookback_time(redshifts).value  # in Gyr
+
+    return lookback_time
+
+
+def add_lbt_twiny(axs, xticks, xlim):
+    ax2 = axs.twiny()
+    ax2.set_xlim(xlim)
+    a_ticks = xticks[(xticks > 0) & (xticks <= xlim[1])]
+    ax2.set_xticks(a_ticks)
+    ax2.set_xticklabels([f"{t:.1f}" for t in calc_lbt(a_ticks)])
+    ax2.set_xlabel("Lookback Time (Gyr)", size=13)
+
+
+def plot_preds(axs, curves, tbins, labels, colors=CURVE_COLORS, fill=CURVE_FILL):
+    xticks = np.arange(0, 1.1, 0.1)
+    xlim = (0, 1.01)
+    ylim = (0., 0.8)
+
+    for curve, label, color, fl in zip(curves, labels, colors, fill):
+        axs.plot(tbins, np.abs(curve[1]), color=color, label=label)
+        if fl:
+            axs.fill_between(tbins, np.abs(curve[0]), np.abs(curve[2]),
+                              color=color, alpha=0.2)
+
+    axs.set_xlabel('Scale Factor a = 1/(1+z)')
+    axs.set_xticks(xticks)
+    axs.set_xlim(xlim)
+    axs.set_ylabel(r'$\rho_s (m(a)_{test}, m(a)_{pred})$')
+    axs.set_ylim(ylim)
+    axs.grid()
+    axs.legend()
+
+    add_lbt_twiny(axs, xticks, xlim)
+
+
+def plot_feature_corrs(axs, corr_dict, params, labels, tbins, sm=True):
+    xticks = np.arange(0, 1.1, 0.1)
+    xlim = (0, 1.01)
+
+    plot_corrs(corr_dict, params=params, labels=labels,
+               time=tbins[::-1], axs=axs, sm=sm, history='M/M0')
+    axs.set_xticks(xticks)
+    axs.set_xlim(xlim)
+
+    add_lbt_twiny(axs, xticks, xlim)
+
+
 def plot_dynamical_time(axs, xlim, xticks, scales, lookback_time):
     for ax in axs.ravel():
         ax2 = ax.twiny()

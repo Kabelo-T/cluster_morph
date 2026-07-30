@@ -258,6 +258,43 @@ def get_virial_masses(halo_ids=None) -> np.ndarray:
     return mass
 
 
+AHF_Z0_PARAMS = ['numSubStruct(3)', 'Mvir(4)', 'npart(5)', 'Rvir(12)', 'Rmax(13)', 'r2(14)',
+                 'mbp_offset(15)', 'com_offset(16)', 'Vmax(17)', 'v_esc(18)', 'sigV(19)',
+                 'lambda(20)', 'lambdaE(21)', 'b(25)', 'c(26)', 'ovdens(36)', 'fMhires(38)',
+                 'Ekin(39)', 'Epot(40)', 'cNFW(43)', 'M_gas(45)', 'M_star(65)']
+
+
+def get_ahf_z0(halo_ids=None, params: list = AHF_Z0_PARAMS) -> pd.DataFrame:
+    """Curated AHF scalar parameters at redshift 0, one row per halo.
+
+    Parameters
+    ----------
+    halo_ids : list, optional
+        restrict to these halo IDs, by default None (use all halos)
+    params : list, optional
+        AHF columns to include, by default AHF_Z0_PARAMS
+
+    Returns
+    -------
+    pd.DataFrame
+        indexed by halo ID, one column per param
+    """
+    ahf_dict = get_ahf_all()
+    if halo_ids is None:
+        halo_ids = list(ahf_dict.keys())
+
+    rows = []
+    for halo_id in halo_ids:
+        df = ahf_dict[halo_id]
+        row = df.loc[df['Redshift(0)'] == 0, params].iloc[0]
+        row.name = halo_id
+        rows.append(row)
+
+    z0df = pd.DataFrame(rows)
+    z0df.index.name = 'ID'
+    return z0df
+
+
 def get_virial_radius(idx: int = None, file: str = None) -> tuple:
     """Get the virial radius for a given halo at z = 0, in units of h^-1 kpc.
 

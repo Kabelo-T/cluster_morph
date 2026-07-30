@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from astropy.cosmology import Planck13
 
 import utils.file as futils
 import utils.data as datutils
@@ -79,62 +78,12 @@ def load(features):
                                       min_mass_bin=0.01, log_spacing=True)
     return mah_dict, ma, am, aexp_bins, mass_bins, df
 
-def calc_lbt(aexp):
-    redshifts = 1/aexp -1
-    lookback_time = Planck13.lookback_time(redshifts).value  # in Gyr
-
-    return lookback_time
-
-
 SM_LABELS = [r'$\mathrm{SM} + m_{14} + \mathrm{Core\,Conc.}$',
              r'$\mathrm{SM} + m_{14}$', r'$\mathrm{SM}$', r'$A$']
 
 DS_CURVE_LABELS = [' + '.join(DS_LABELS[:5]), ' + '.join(DS_LABELS[1:5]),
                     ' + '.join(DS_LABELS[2:5]), DS_LABELS[4],
                     DS_LABELS[5], DS_LABELS[6]]
-
-CURVE_COLORS = ['k', '#56B4E9', '#F0E442', '#009E73', '#E69F00', '#CC79A7']
-CURVE_FILL = [True, False, False, True, True, True]
-
-def add_lbt_twiny(axs, xticks, xlim):
-    ax2 = axs.twiny()
-    ax2.set_xlim(xlim)
-    a_ticks = xticks[(xticks > 0) & (xticks <= xlim[1])]
-    ax2.set_xticks(a_ticks)
-    ax2.set_xticklabels([f"{t:.1f}" for t in calc_lbt(a_ticks)])
-    ax2.set_xlabel("Lookback Time (Gyr)", size=13)
-
-def plot_preds(axs, curves, tbins, labels, colors=CURVE_COLORS, fill=CURVE_FILL):
-    xticks = np.arange(0, 1.1, 0.1)
-    xlim = (0, 1.01)
-    ylim = (0., 0.8)
-
-    for curve, label, color, fl in zip(curves, labels, colors, fill):
-        axs.plot(tbins, np.abs(curve[1]), color=color, label=label)
-        if fl:
-            axs.fill_between(tbins, np.abs(curve[0]), np.abs(curve[2]),
-                              color=color, alpha=0.2)
-
-    axs.set_xlabel('Scale Factor a = 1/(1+z)')
-    axs.set_xticks(xticks)
-    axs.set_xlim(xlim)
-    axs.set_ylabel(r'$\rho_s (m(a)_{test}, m(a)_{pred})$')
-    axs.set_ylim(ylim)
-    axs.grid()
-    axs.legend()
-
-    add_lbt_twiny(axs, xticks, xlim)
-
-def plot_feature_corrs(axs, corr_dict, params, labels, tbins, sm=True):
-    xticks = np.arange(0, 1.1, 0.1)
-    xlim = (0, 1.01)
-
-    plots.plot_corrs(corr_dict, params=params, labels=labels,
-                      time=tbins[::-1], axs=axs, sm=sm, history='M/M0')
-    axs.set_xticks(xticks)
-    axs.set_xlim(xlim)
-
-    add_lbt_twiny(axs, xticks, xlim)
 
 def sm_predict(features):
     mah_dict, mah, _, tbins, _,  df = load(features)
@@ -212,15 +161,15 @@ def predict(features):
         labels, params, param_labels, sm_flag = DS_CURVE_LABELS, DS_PARAMS, DS_LABELS, False
 
     fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(16, 6), constrained_layout=True)
-    plot_feature_corrs(axs[0], corr_dict, params, param_labels, tbins, sm=sm_flag)
-    plot_preds(axs[1], curves, tbins, labels)
+    plots.plot_feature_corrs(axs[0], corr_dict, params, param_labels, tbins, sm=sm_flag)
+    plots.plot_preds(axs[1], curves, tbins, labels)
     plt.show()
     return
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--features', type=str,
+    parser.add_argument('-f', '--features', type=str,
         default='sm', help="features to make predictions, sm or ds")
     args = parser.parse_args()
     predict(args.features)
