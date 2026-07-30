@@ -3,8 +3,9 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.patches import Circle
-from matplotlib.colors import LogNorm
+from matplotlib.colors import LogNorm, BoundaryNorm
 from cycler import cycler
+from astropy.cosmology import Planck13
 import seaborn as sns
 
 import utils.file as futils
@@ -168,7 +169,7 @@ def plot_joint_dist(corr_matrix: pd.DataFrame, morph_df: pd.DataFrame,
 
 
 def plot_mah(indx: int, axs, am=False, highlight=False,
-             mah_dir: str = 'data/gadgetx3k/AHFHaloHistory/',
+             mah_dir: str = 'data/AHF_HaloHistory/',
              show_relaxed: bool = False, show_disturbed: bool = False,
              show_all: bool = False) -> None:
 
@@ -287,6 +288,98 @@ def plot_dynamical_time(axs, xlim, xticks, scales, lookback_time):
         ax2.set_xticklabels(tlabels)
         ax2.set_xlabel(
             r'$\Delta t / t_{\mathrm{dyn}}$', fontsize=14, labelpad=10)
+
+
+def plot_lookback_time(axs, xlim, xticks, fontsize=14):
+    a_ticks = xticks[(xticks > 0) & (xticks <= xlim[1])]
+    redshifts = 1 / a_ticks - 1
+    lookback_time = Planck13.lookback_time(redshifts).value  # in Gyr
+
+    for ax in axs.ravel():
+        ax2 = ax.twiny()
+        ax2.set_xlim(xlim)
+        ax2.set_xticks(a_ticks)
+        ax2.set_xticklabels(
+            [f'{t:.1f}' for t in lookback_time], fontsize=fontsize)
+        ax2.set_xlabel('Lookback Time (Gyr)', fontsize=fontsize, labelpad=10)
+
+
+def plot_split(axs, mah_25, mah_50, mah_75, l25, u25, time, indx):
+    axs.set_xlabel('Scale Factor a = 1/(1+z)')
+    axs.set_ylabel('m(a)')
+
+    for i, mah in enumerate(mah_25):
+        if i == 0:
+            axs.plot(time, mah,
+                     color='blue', alpha=0.3, lw=1)
+        else:
+            axs.plot(time, mah,
+                     color='blue', alpha=0.3, lw=1)
+
+    for i, mah in enumerate(mah_75):
+        if i == 0:
+            axs.plot(time, mah,
+                     color='red', alpha=0.3, lw=1)
+        else:
+            axs.plot(time, mah,
+                     color='red', alpha=0.3, lw=1)
+
+    # Lower 25%
+    axs.plot(
+        time, l25[1],
+        color='blue', lw=3, label='lower 25%'
+    )
+    # fill between 16th and 84th percentiles
+    axs.fill_between(
+        time, l25[0], l25[2],
+        color='blue', alpha=0.25, linewidth=0
+    )
+
+    # Upper 25%
+    axs.plot(
+        time, u25[1],
+        color='red', lw=3, label='upper 25%'
+    )
+    # fill between 16th and 84th percentiles
+    axs.fill_between(
+        time, u25[0], u25[2],
+        color='red', alpha=0.25, linewidth=0
+    )
+
+    axs.vlines(time[indx], ymin=-1, ymax=1.5, color='k', ls='--')
+    axs.set_ylim(0.0, 1.01)
+    axs.legend()
+
+    return
+
+
+def plot_2dcorr(corr_matrix, scales, xlabel, ylabel, ax, title=''):
+    cmap = plt.get_cmap('bwr', 10)                   # 10 discrete color bins
+    # 10 bins -> 11 boundaries
+    boundaries = np.linspace(-1.0, 1.0, 11)
+    norm = BoundaryNorm(boundaries, cmap.N, clip=True)
+
+    # compute extent so pixel centers map to the provided scales array
+    ny, nx = corr_matrix.shape
+    xmin, xmax = scales[0], scales[-1]
+    ymin, ymax = scales[0], scales[-1]
+    dx = (xmax - xmin) / (nx - 1) if nx > 1 else 0.0
+    dy = (ymax - ymin) / (ny - 1) if ny > 1 else 0.0
+    extent = [xmin - dx/2.0, xmax + dx/2.0, ymin - dy/2.0, ymax + dy/2.0]
+
+    im = ax.imshow(corr_matrix, origin='lower',
+                   extent=extent,
+                   cmap=cmap, norm=norm,
+                   interpolation='nearest', aspect='equal')
+
+    ax.plot(scales, scales, color='black', linestyle='-', linewidth=1)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+
+    return im, boundaries
 
 
 if __name__ == '__main__':

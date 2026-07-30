@@ -45,9 +45,7 @@ def multicorr(x: np.ndarray, y: np.ndarray, alpha: float = 6.0, proj=False, scor
         n_halos = x.shape[0] // 3
     else:
         n_halos = x.shape[0]
-
     halo_idx = np.arange(n_halos)
-
     sp_corr = []
     weights = np.zeros((n_targets, n_features))
 

@@ -135,10 +135,10 @@ def create_morph_df(source_morphs, name=None, save=False):
     return sources
 
 
-def load_map(file, map_dir='/Users/kabelo/clusters/data/gadgetx3k/maps/zx/', id=None):
+def load_map(file, map_dir='/Users/kabelo/clusters/data/maps/zx/', id=None):
 
     if id is not None:
-        map_file = f'/Users/kabelo/clusters/data/gadgetx3k/maps/zx/bcg_{id:04}_125_2.fits'
+        map_file = f'/Users/kabelo/clusters/data/maps/zx/bcg_{id:04}_125_2.fits'
     else:
         if '.fits' in file:
             map_file = map_dir + file
@@ -187,13 +187,16 @@ def get_mah(file: str) -> pd.DataFrame:
     return ma
 
 
-def get_mah_all(mah_dir: str = 'data/gadgetx3k/GadgetX', return_masses: bool = False) -> dict:
+def get_mah_all(mah_dir: str = 'data/AHF_HaloHistory', return_masses: bool = False,
+                halo_ids: list = None) -> dict:
     df_dict = {}
     for f in sorted(os.listdir(mah_dir)):
         file = os.path.join(mah_dir, f)
+        idx = find_id(file)
+        if halo_ids is not None and idx not in halo_ids:
+            continue
         # at this point m(a) is calculated for different snapshots so inhomogenous in aexp
         ma = get_mah(file)
-        idx = find_id(file)
         df_dict[idx] = ma
 
     mah, masses, common_aexp = datutils.interp_ma(df_dict)
@@ -233,7 +236,7 @@ def get_ahf(file: str, clean=True) -> pd.DataFrame:
     return ahf_df
 
 
-def get_ahf_all(ahf_dir: str = 'data/gadgetx3k/GadgetX/', clean=True) -> dict:
+def get_ahf_all(ahf_dir: str = 'data/AHF_HaloHistory/', clean=True) -> dict:
     df_dict = {}
     for f in sorted(os.listdir(ahf_dir)):
         file = ahf_dir + f
@@ -277,7 +280,7 @@ def get_virial_radius(idx: int = None, file: str = None) -> tuple:
         return None
 
     if file is None:
-        file = f'data/gadgetx3k/AHFHaloHistory/NewMDCLUSTER_{str(idx).zfill(4)}_halo_128000000000001.dat'
+        file = f'data/AHF_HaloHistory/NewMDCLUSTER_{str(idx).zfill(4)}_halo_128000000000001.dat'
 
     ahf = get_ahf(file)
     rvir = ahf.loc[ahf['Redshift(0)'] == 0.0, 'Rvir(12)'].values[0]
@@ -303,18 +306,19 @@ def get_morph(halo_ids=None, sm_dir: str = 'results/zx/rin50.0kpc_rout1.0Mpc_305
 
     if halo_ids is not None:
         sm_df = sm_df.reindex(halo_ids)
-    return sm_df.reset_index()
+    return sm_df
 
 
 def get_morphologies(halo_ids=None, f='rin50.0kpc_rout1.0Mpc_305.csv', all=False):
     sm_df_zx = get_morph(halo_ids, f'results/zx/{f}', all=all)
     sm_df_xy = get_morph(halo_ids, f'results/xy/{f}', all=all)
     sm_df_yz = get_morph(halo_ids, f'results/yz/{f}', all=all)
-    smdf = pd.concat([sm_df_xy, sm_df_yz, sm_df_zx])
+    smdf = pd.concat(
+        [sm_df_xy.reset_index(), sm_df_yz.reset_index(), sm_df_zx.reset_index()])
     return smdf
 
 
-def get_ds_theory_today(file_path: str = 'data/gadgetx3k/GadgetX-DS-theory-snap-128.txt'):
+def get_ds_theory_today(file_path: str = 'data/GadgetX-DS-theory-snap-128.txt'):
     ds_z0 = {}
     with open(file_path) as f:
         for i, x in enumerate(f):
@@ -337,7 +341,7 @@ def get_ds(halo_ids=None, snap: int = 128, clean=True) -> pd.DataFrame:
     -------
     pd.DataFrame
     """
-    file = f'data/gadgetx3k/G3X_progenitors/DS_G3X_snap_{str(snap).zfill(3)}_center-cluster_progenitors.txt'
+    file = f'data/G3X_progenitors/DS_G3X_snap_{str(snap).zfill(3)}_center-cluster_progenitors.txt'
     dsdf = pd.read_csv(file, sep=r'\s+', header=0)
     int_columns = [0, 1, 2, 7]
     column_names = dsdf.columns
@@ -352,6 +356,13 @@ def get_ds(halo_ids=None, snap: int = 128, clean=True) -> pd.DataFrame:
 
     dsdf.rename(columns={'rID[0]': 'ID'}, inplace=True)
     dsdf.set_index('ID', inplace=True)
+    rads = np.load('data/cluster_rsp_rtrunc.npz')
+    rdf = pd.DataFrame()
+    rdf['ID'] = rads['cluster_ID']
+    rdf['r_trunc'] = rads['r_trunc']
+    rdf['r_sp'] = rads['r_sp']
+    rdf.set_index(['ID'], inplace=True)
+    dsdf = dsdf.join(rdf, on='ID')
     if halo_ids is not None:
         dsdf = dsdf.loc[halo_ids]
 
@@ -368,10 +379,63 @@ def get_ds_all():
     return df_dict
 
 
-def get_m14(halo_ids=None, file_path: str = 'data/gadgetx3k/mag_diff_GadgetX_3k.csv') -> pd.DataFrame:
+def get_m14(halo_ids=None, file_path: str = 'data/mag_diff_GadgetX_3k.csv') -> pd.DataFrame:
     m14 = pd.read_csv(file_path)
     m14.set_index('ID', inplace=True)
     if halo_ids is not None:
         m14 = m14.loc[halo_ids]
-    # m14.reset_index(inplace=True)
-    return m14.reset_index()
+    return m14
+
+
+def valid_ids(ixy, iyz, izx):
+    idxy = {int(k) for k in ixy.index}
+    idyz = {int(k) for k in iyz.index}
+    idzx = {int(k) for k in izx.index}
+    halo_ids = list(idxy & idyz & idzx)
+
+    return halo_ids
+
+
+def load_sm():
+    ixy = get_morph(sm_dir='results/xy/r_0.03Mpc_300.csv')
+    iyz = get_morph(sm_dir='results/yz/r_0.03Mpc_286.csv')
+    izx = get_morph(sm_dir='results/zx/r_0.03Mpc_297.csv')
+    halo_ids = valid_ids(ixy, iyz, izx)
+    inner_df = pd.concat(
+        [ixy.loc[halo_ids], iyz.loc[halo_ids], izx.loc[halo_ids]])
+    iconc = inner_df['C']
+    iconc.name = 'core_C'
+    m14 = get_m14()
+    m14 = m14.loc[halo_ids]
+    m14_stacked = np.hstack([m14['proj_x'], m14['proj_y'], m14['proj_z']])
+    smdf = get_morphologies(halo_ids)
+    ahf = get_ahf_all()
+    mass = np.array([ahf[halo_id]['Mvir(4)'][ahf[halo_id]['Redshift(0)'] == 0].values[0]
+                     for halo_id in halo_ids])
+    n_halos = len(halo_ids)
+    assert m14_stacked.shape[0] == 3 * n_halos
+    assert smdf.shape[0] == 3 * n_halos
+    assert iconc.shape[0] == 3 * n_halos
+    m14_xyz = pd.Series(m14_stacked)
+    df = pd.concat([smdf.reset_index(), m14_xyz.reset_index(drop=True),
+                    iconc.reset_index(drop=True)], axis=1)
+    df.rename(columns={0: 'm14'}, inplace=True)
+
+    return df, halo_ids
+
+
+def load(features):
+    if features == 'sm':
+        df, halo_ids = load_sm()
+    else:
+        dsdf = get_ds()
+        m14 = get_m14()
+        dsdf.drop(columns=['eta_500[8]', 'delta_500[9]',
+                           'fm_500[10]', 'fm2_500[11]'], inplace=True)
+        df = pd.concat([dsdf, m14['3d']], axis=1)
+
+    mah_dict = get_mah_all(halo_ids=halo_ids)
+    ma, _, aexp_bins = datutils.interp_ma(mah_dict)
+    am, mass_bins = datutils.build_am(ma=ma, scales=aexp_bins,
+                                      min_mass_bin=0.01, log_spacing=True)
+    return mah_dict, ma, am, aexp_bins, mass_bins, df

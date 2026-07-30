@@ -50,6 +50,12 @@ def build_rho(df: pd.DataFrame, mah) -> np.ndarray:
         for _ in range(r):
             bootdf = df0.sample(n=len(df0), replace=True)
             sp, _ = spearmanr(bootdf)
+            if np.ndim(sp) == 0:
+                # degenerate resample (e.g. a constant column, common near
+                # the earliest time bins where most halos are still clamped
+                # to M/M0 = 0): spearmanr collapses to a scalar nan instead
+                # of a matrix, so this draw contributes nothing
+                continue
             w = sp[1:, 0]/r
             rho[i, :] += w
     return rho
