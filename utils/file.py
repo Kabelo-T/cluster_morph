@@ -433,37 +433,50 @@ def valid_ids(ixy, iyz, izx):
     return halo_ids
 
 
-def load_sm():
+def load_sm(stack=True):
+    """Load SM (statmorph) features.
+
+    Parameters
+    ----------
+    stack : bool, optional
+        if True, stack all 3 projections (xy, yz, zx) into one dataframe;
+        if False, use only the zx projection, by default True
+    """
     ixy = get_morph(sm_dir='results/xy/r_0.03Mpc_300.csv')
     iyz = get_morph(sm_dir='results/yz/r_0.03Mpc_286.csv')
     izx = get_morph(sm_dir='results/zx/r_0.03Mpc_297.csv')
     halo_ids = valid_ids(ixy, iyz, izx)
-    inner_df = pd.concat(
-        [ixy.loc[halo_ids], iyz.loc[halo_ids], izx.loc[halo_ids]])
-    iconc = inner_df['C']
-    iconc.name = 'core_C'
     m14 = get_m14()
     m14 = m14.loc[halo_ids]
-    m14_stacked = np.hstack([m14['proj_x'], m14['proj_y'], m14['proj_z']])
-    smdf = get_morphologies(halo_ids)
-    ahf = get_ahf_all()
-    mass = np.array([ahf[halo_id]['Mvir(4)'][ahf[halo_id]['Redshift(0)'] == 0].values[0]
-                     for halo_id in halo_ids])
-    n_halos = len(halo_ids)
-    assert m14_stacked.shape[0] == 3 * n_halos
-    assert smdf.shape[0] == 3 * n_halos
-    assert iconc.shape[0] == 3 * n_halos
-    m14_xyz = pd.Series(m14_stacked)
+
+    if stack:
+        inner_df = pd.concat(
+            [ixy.loc[halo_ids], iyz.loc[halo_ids], izx.loc[halo_ids]])
+        iconc = inner_df['C']
+        iconc.name = 'core_C'
+        m14_xyz = pd.Series(
+            np.hstack([m14['proj_x'], m14['proj_y'], m14['proj_z']]), name='m14')
+        smdf = get_morphologies(halo_ids)
+        n_halos = len(halo_ids)
+        assert m14_xyz.shape[0] == 3 * n_halos
+        assert smdf.shape[0] == 3 * n_halos
+        assert iconc.shape[0] == 3 * n_halos
+    else:
+        iconc = izx.loc[halo_ids]['C']
+        iconc.name = 'core_C'
+        m14_xyz = m14['proj_z']
+        m14_xyz.name = 'm14'
+        smdf = get_morph(halo_ids)  # defaults to the zx projection
+
     df = pd.concat([smdf.reset_index(), m14_xyz.reset_index(drop=True),
                     iconc.reset_index(drop=True)], axis=1)
-    df.rename(columns={0: 'm14'}, inplace=True)
 
     return df, halo_ids
 
 
-def load(features):
+def load(features, stack=True):
     if features == 'sm':
-        df, halo_ids = load_sm()
+        df, halo_ids = load_sm(stack=stack)
     else:
         dsdf = get_ds()
         dsdf.drop(columns=['eta_500[8]', 'delta_500[9]',
