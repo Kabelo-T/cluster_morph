@@ -118,7 +118,7 @@ plot_rc = {
     'legend.fontsize': 8,
 }
 with plt.rc_context(plot_rc):
-    fig, axs = plt.subplots(2, 2, figsize=(7, 6))
+    fig, axs = plt.subplots(2, 2, figsize=(10, 8))
     xticks = np.arange(0, 1.1, 0.1)
     xlim = (0, 1.01)
     ylim = (0., 1.01)

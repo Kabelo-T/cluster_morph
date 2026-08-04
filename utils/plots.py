@@ -12,10 +12,11 @@ import utils.file as futils
 import utils.data as datutils
 
 
-plt.rcParams['xtick.labelsize'] = 13
-plt.rcParams['ytick.labelsize'] = 13
-plt.rcParams['axes.labelsize'] = 18
-plt.rcParams["axes.titlesize"] = 18
+plt.rcParams['xtick.labelsize'] = 14
+plt.rcParams['ytick.labelsize'] = 14
+plt.rcParams['axes.labelsize'] = 16
+plt.rcParams["axes.titlesize"] = 16
+plt.rcParams["legend.fontsize"] = 14
 plt.rcParams["mathtext.fontset"] = "cm"
 plt.rcParams["font.family"] = "serif"
 
@@ -223,6 +224,16 @@ def check_neg(percentiles: list):
         return False
 
 
+LATEX_FONTSIZE = 18
+LEGEND_LATEX_FONTSIZE = 16
+
+
+def bump_latex_legend_fontsize(legend, size=LEGEND_LATEX_FONTSIZE):
+    for text in legend.get_texts():
+        if '$' in text.get_text():
+            text.set_fontsize(size)
+
+
 def plot_corrs(data_dict: dict, params: list[str], labels: list[str], time: np.ndarray,
                axs, sm=True, am=False, history='M/M0') -> None:
 
@@ -238,12 +249,11 @@ def plot_corrs(data_dict: dict, params: list[str], labels: list[str], time: np.n
 
     if sm:
         axs.set_ylabel(
-            r'$|\rho_{\mathrm{sp}} (SM_{a=0.94}, ' + t + r')|$')
-        ylim = (0., 0.7)
+            r'$|\rho_{\mathrm{sp}} (SM_{a=0.94}, ' + t + r')|$', fontsize=LATEX_FONTSIZE)
     else:
         axs.set_ylabel(
-            r'$|\rho_{\mathrm{sp}} (DS_{a=1}, ' + t + r')|$')
-        ylim = (0., 0.8)
+            r'$|\rho_{\mathrm{sp}} (DS_{a=1}, ' + t + r')|$', fontsize=LATEX_FONTSIZE)
+    ylim = (0., 0.8)
 
     for i, param in enumerate(params):
         p50 = datutils.get_perc(
@@ -257,7 +267,7 @@ def plot_corrs(data_dict: dict, params: list[str], labels: list[str], time: np.n
             axs.plot(time, p50, color=colors[i],
                      label=labels[i], linestyle='solid')
 
-        if param == 'A' or param == 'core_C' or param == 'fm_200[5]' or param == 'eta_200[3]':
+        if param == 'A' or param == 'core_C' or param == 'fm_200[5]' or param == '3d':
             p25 = datutils.get_perc(
                 data_dict, param=param, q=25, history=history)
             p75 = datutils.get_perc(
@@ -275,7 +285,7 @@ def plot_corrs(data_dict: dict, params: list[str], labels: list[str], time: np.n
     axs.set_yticks(yticks)
     axs.set_ylim(ylim)
     axs.grid()
-    axs.legend()
+    bump_latex_legend_fontsize(axs.legend())
 
 
 CURVE_COLORS = ['k', '#56B4E9', '#F0E442', '#009E73', '#E69F00', '#CC79A7']
@@ -295,12 +305,13 @@ def add_lbt_twiny(axs, xticks, xlim):
     a_ticks = xticks[(xticks > 0) & (xticks <= xlim[1])]
     ax2.set_xticks(a_ticks)
     ax2.set_xticklabels([f"{t:.1f}" for t in calc_lbt(a_ticks)])
-    ax2.set_xlabel("Lookback Time (Gyr)", size=13)
+    ax2.set_xlabel("Lookback Time (Gyr)", size=16)
 
 
 def plot_preds(axs, curves, tbins, labels, colors=CURVE_COLORS, fill=CURVE_FILL):
     xticks = np.arange(0, 1.1, 0.1)
     xlim = (0, 1.01)
+    yticks = np.arange(0, 0.9, 0.1)
     ylim = (0., 0.8)
 
     for curve, label, color, fl in zip(curves, labels, colors, fill):
@@ -312,10 +323,11 @@ def plot_preds(axs, curves, tbins, labels, colors=CURVE_COLORS, fill=CURVE_FILL)
     axs.set_xlabel('Scale Factor a = 1/(1+z)')
     axs.set_xticks(xticks)
     axs.set_xlim(xlim)
-    axs.set_ylabel(r'$\rho_s (m(a)_{test}, m(a)_{pred})$')
+    axs.set_ylabel(r'$\rho_s (m(a)_{test}, m(a)_{pred})$', fontsize=LATEX_FONTSIZE)
+    axs.set_yticks(yticks)
     axs.set_ylim(ylim)
     axs.grid()
-    axs.legend()
+    bump_latex_legend_fontsize(axs.legend())
 
     add_lbt_twiny(axs, xticks, xlim)
 
@@ -341,7 +353,7 @@ def plot_dynamical_time(axs, xlim, xticks, scales, lookback_time):
         ax2.set_xticks(xticks)
         ax2.set_xticklabels(tlabels)
         ax2.set_xlabel(
-            r'$\Delta t / t_{\mathrm{dyn}}$', fontsize=14, labelpad=10)
+            r'$\Delta t / t_{\mathrm{dyn}}$', fontsize=16, labelpad=10)
 
 
 def plot_lookback_time(axs, xlim, xticks, fontsize=14):

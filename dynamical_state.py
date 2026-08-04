@@ -133,5 +133,5 @@ cbar.set_label(
     r'Correlation coefficient  $\rho_s (DS_{200c}(a_i), m(a_j))$', fontsize=20)
 
 plt.tight_layout(rect=[0, 0, 0.84, 1])  # leave space on right for colorbar
-# plt.savefig('plots/ds_200c_ma.pdf')
+plt.savefig('plots/ds_200c_ma.pdf')
 plt.show()

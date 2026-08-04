@@ -466,10 +466,12 @@ def load(features):
         df, halo_ids = load_sm()
     else:
         dsdf = get_ds()
-        m14 = get_m14()
         dsdf.drop(columns=['eta_500[8]', 'delta_500[9]',
                            'fm_500[10]', 'fm2_500[11]'], inplace=True)
-        df = pd.concat([dsdf, m14['3d']], axis=1)
+        m14 = get_m14()
+        df = pd.concat([dsdf, m14['3d']], axis=1, join='inner')
+        df.sort_index(inplace=True)
+        halo_ids = list(df.index)
 
     mah_dict = get_mah_all(halo_ids=halo_ids)
     ma, _, aexp_bins = datutils.interp_ma(mah_dict)
