@@ -51,7 +51,7 @@ def process_one(file, annulus, r1, r2, map_dir, use_vir=False):
     return idx, morph[0]
 
 
-def morph(map_dir, annulus=False, r1=1, r2=50, out_dir='.', use_vir=False):
+def morph(map_dir, annulus=False, r1=1, r2=50, out_dir='.', use_vir=False, workers=8):
     morphs_list = []
     files_list = sorted(os.listdir(map_dir))
     total = len(files_list)
@@ -59,7 +59,7 @@ def morph(map_dir, annulus=False, r1=1, r2=50, out_dir='.', use_vir=False):
     r1 = r1 * u.Mpc
     r2 = r2 * u.kpc
 
-    with ProcessPoolExecutor(max_workers=8) as executor:
+    with ProcessPoolExecutor(max_workers=workers) as executor:
         futures = {
             executor.submit(process_one, file, annulus, r1, r2, map_dir, use_vir): file
             for file in files_list
@@ -122,6 +122,8 @@ if __name__ == "__main__":
                         help="Output directory under results/")
     parser.add_argument("--vir", action="store_true",
                         help="Use virial radius for r1")
+    parser.add_argument("--workers", type=int, default=8,
+                        help="Number of worker processes, default=8")
     args = parser.parse_args()
 
     morph(
@@ -130,5 +132,6 @@ if __name__ == "__main__":
         r1=args.r1,
         r2=args.r2,
         out_dir=args.out_dir,
-        use_vir=args.vir
+        use_vir=args.vir,
+        workers=args.workers
     )
