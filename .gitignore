@@ -1,0 +1,10 @@
+data/
+*.csv
+*.fits
+.DS_Store
+.vscode/
+*__pycache__*
+paper/
+*.bib
+*.ipynb
+*.pdf
